@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teaching Loads</title>
+<!-- Template for build_loads_page.py. Edit this file, not "Teaching Loads.html". -->
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f5f9; --surface: #ffffff; --text: #1d1b22; --muted: #5f5b6b; --faint: #8b8697; --line: #e3e0ea;
+  --accent: #4b2e83; --accent-soft: #ece6f6; --warn: #b26a00; --warn-soft: #fff4dc; --ok: #1b6e2a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #141317; --surface: #1d1b22; --text: #ece9f2; --muted: #a7a1b4; --faint: #7d7889; --line: #34303e;
+    --accent: #b9a3e8; --accent-soft: #2c2540; --warn: #f0b860; --warn-soft: #3a2f1a; --ok: #7fd18f;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #141317; --surface: #1d1b22; --text: #ece9f2; --muted: #a7a1b4; --faint: #7d7889; --line: #34303e;
+  --accent: #b9a3e8; --accent-soft: #2c2540; --warn: #f0b860; --warn-soft: #3a2f1a; --ok: #7fd18f;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 16px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+h1 { margin: 0; font-size: 22px; color: var(--accent); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: end; padding: 10px 12px; margin: 12px 0; }
+.ctl { display: flex; flex-direction: column; gap: 3px; }
+.ctl > span { font-size: 12px; color: var(--muted); font-weight: 600; }
+.ctl .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+input, select, button { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 4px 7px; }
+input[type=number] { width: 3.6em; text-align: right; }
+input.year { width: 7em; }
+button { cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.defaults { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.defaults label { display: inline-flex; gap: 4px; align-items: center; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; vertical-align: middle; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; background: var(--surface); position: sticky; top: 0; }
+td.n, th.n { text-align: right; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--accent-soft); }
+tr.flag td { background: var(--warn-soft); }
+input.dflt { color: var(--faint); }
+input.note { width: 14em; }
+.recent { color: var(--muted); font-size: 13px; cursor: help; }
+.x { border: 0; background: none; color: var(--faint); font-size: 16px; padding: 0 4px; }
+.x:hover { color: var(--text); }
+.warn { color: var(--warn); font-weight: 600; }
+.sum { display: flex; flex-wrap: wrap; gap: 8px 28px; padding: 10px 12px; margin: 12px 0; }
+.sum b { font-size: 18px; color: var(--accent); }
+.sum small { display: block; color: var(--muted); font-size: 12px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; }
+.actions p { margin: 0; flex: 1 1 260px; color: var(--muted); font-size: 13px; }
+#msg { font-size: 13px; color: var(--muted); padding: 0 12px 10px; min-height: 1em; }
+.add { display: flex; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.add input { width: 16em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Teaching Loads</h1>
+    <span id="status" style="color:var(--muted);font-size:13px"></span>
+  </header>
+
+  <div class="panel bar">
+    <label class="ctl"><span>Academic year</span><input class="year" id="year" placeholder="2027-2028"></label>
+    <div class="ctl"><span>Default load per position (Fall – Spring, in sections)</span><div class="defaults" id="defaults"></div></div>
+  </div>
+
+  <div class="panel">
+    <div class="tbl"><table>
+      <thead><tr><th>Name</th><th>Position</th><th class="n" id="h-fall">Fall</th><th class="n" id="h-spring">Spring</th><th class="n">Total</th>
+        <th>Reason (if not default)</th><th>Note</th><th id="h-recent" title="Sections taught (from IRAP). 22 and 22W counted once. Hover a cell for the list.">Recent</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+    <div class="add"><input id="newname" placeholder="Add a person (full name)" aria-label="New person's name"><button id="addbtn">Add</button></div>
+  </div>
+
+  <div class="panel sum" id="sum"></div>
+
+  <div class="panel actions">
+    <p>Your entries are kept in this browser as a draft. <b>Save the file</b> to keep them for good, then put it in the SCHEDULING folder for that year.
+      Nothing is uploaded anywhere.</p>
+    <button class="primary" id="save">Save file (.csv)</button>
+    <label><input type="file" id="open" accept=".csv" hidden><span class="chip" role="button" tabindex="0" style="border:1px solid var(--line);border-radius:6px;padding:4px 8px;cursor:pointer">Open saved file…</span></label>
+    <button id="reset">Start over</button>
+  </div>
+  <div id="msg"></div>
+</div>
+
+<script>
+const BAKED = {"people":["Neal Dihora","Dennis Elverman","Amir Gholami","Mark Gmach","Jeffrey Hahn","Rashiqa Kamal","Pascal Letourneau","He Li","Mark Membrino","Brandon Miles","Arjan Premti","Pengyu Qian","Yankuo Qiao","Patrick M Roney","Md Showaib Rahman Sarker","Bakhtear Talukdar","Gene Toboyek","Yuan Yuan","Yanhui Zhao"],"recent":{"Jeffrey Hahn":{"counts":[4,5,4],"detail":"Fall 25: 341-01, 341-02, 341-03, 455-01\nSpring 26: 341-01, 341-02, 341-03, 342-01, 421-22\nFall 26: 341-01, 341-02, 341-07, 455-01"},"Mark Membrino":{"counts":[1,1,1],"detail":"Fall 25: 458-01\nSpring 26: 457-01\nFall 26: 458-01"},"Arjan Premti":{"counts":[2,1,4],"detail":"Fall 25: 344-23, 360-22\nSpring 26: 344-23\nFall 26: 344-05, 344-06, 344-22, 360-22"},"Rashiqa Kamal":{"counts":[2,2,2],"detail":"Fall 25: 344-22, 360-03\nSpring 26: 344-22, 360-01\nFall 26: 360-02, 760-22"},"Pascal Letourneau":{"counts":[3,4,2],"detail":"Fall 25: 345-22, 430-01, 780-22\nSpring 26: 345-01, 498-22, 740-22, 780-22\nFall 26: 345-22, 740-22"},"Brandon Miles":{"counts":[5,5,5],"detail":"Fall 25: 101-04, 101-05, 344-01, 344-02, 344-05\nSpring 26: 101-01, 344-01, 344-03, 344-04, 493-01\nFall 26: 101-04, 101-05, 344-01, 344-02, 444-03"},"Bakhtear Talukdar":{"counts":[3,4,3],"detail":"Fall 25: 360-01, 420-22, 456-03\nSpring 26: 344-07, 444-22, 456-01, 456-22\nFall 26: 360-01, 420-22, 732-22"},"Yanhui Zhao":{"counts":[4,3,3],"detail":"Fall 25: 345-02, 377-01, 410-01, 755-22\nSpring 26: 345-02, 345-03, 410-01\nFall 26: 344-23, 345-03, 377-22"},"Pengyu Qian":{"counts":[3,4,3],"detail":"Fall 25: 344-06, 401-01, 402-01\nSpring 26: 387-01, 401-01, 402-01, 498-02\nFall 26: 344-04, 401-22, 402-01"},"Zaifeng Fan":{"counts":[3,0,0],"detail":"Fall 25: 735-22, 735-23, 735-24\nSpring 26: -\nFall 26: -"},"Mark Gmach":{"counts":[4,6,5],"detail":"Fall 25: 101-01, 101-02, 101-22, 345-01\nSpring 26: 101-02, 101-200, 101-22, 344-06, 402-22, 446-01\nFall 26: 101-01, 101-02, 101-03, 101-22, 345-01"},"Garrett Smith":{"counts":[5,0,0],"detail":"Fall 25: 348-01, 348-02, 370-01, 493-01, 798-23\nSpring 26: -\nFall 26: -"},"Patrick Roney":{"counts":[0,1,1],"detail":"Fall 25: -\nSpring 26: 341-08\nFall 26: 341-03"},"Yankuo Qiao":{"counts":[0,0,3],"detail":"Fall 25: -\nSpring 26: -\nFall 26: 345-02, 456-02, 456-03"},"Neal Dihora":{"counts":[4,4,4],"detail":"Fall 25: 472-01, 472-02, 472-03, 484-01\nSpring 26: 344-02, 472-01, 472-02, 484-01\nFall 26: 344-03, 472-01, 472-02, 484-01"},"William Dougan":{"counts":[0,0,1],"detail":"Fall 25: -\nSpring 26: -\nFall 26: 370-01"},"Dennis Elverman":{"counts":[4,4,4],"detail":"Fall 25: 341-04, 341-05, 341-22, 434-01\nSpring 26: 341-04, 341-07, 341-22, 433-01\nFall 26: 341-04, 341-05, 341-22, 434-01"},"Gene Toboyek":{"counts":[4,4,4],"detail":"Fall 25: 341-06, 341-07, 401-22, 442-01\nSpring 26: 341-05, 341-06, 442-01, 442-22\nFall 26: 341-06, 401-01, 442-01, 442-22"},"He Li":{"counts":[3,3,3],"detail":"Fall 25: 344-03, 456-01, 456-02\nSpring 26: 456-02, 735-22, 735-23\nFall 26: 456-01, 735-22, 735-23"},"Mohammad Jafarinejad":{"counts":[4,6,0],"detail":"Fall 25: 344-04, 345-03, 360-02, 718-22\nSpring 26: 344-05, 360-02, 360-03, 422-22, 491-01, 718-22\nFall 26: -"},"Yuan Yuan":{"counts":[3,3,3],"detail":"Fall 25: 446-01, 446-22, 460-01\nSpring 26: 446-22, 464-01, 737-22\nFall 26: 446-01, 446-22, 460-01"},"Md Showaib Rahman Sarker":{"counts":[3,3,3],"detail":"Fall 25: 444-01, 444-02, 444-03\nSpring 26: 348-01, 444-01, 444-02\nFall 26: 348-01, 444-01, 444-02"}},"offered":{"Fall 25":64,"Spring 26":63,"Fall 26":60},"terms":["Fall 25","Spring 26","Fall 26"]};
+const POSITIONS = ["Tenure track", "Lecturer", "Chair", "Adjunct / ad hoc", "Manual"];
+const REASONS = ["", "Sabbatical", "Course release", "Load reduction", "Leave", "Overload", "New hire", "Other"];
+const STORE = "teaching-loads-draft-v1";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const lastName = n => n.trim().split(/\s+/).pop();
+
+function fresh() {
+  const y = new Date().getFullYear() + (new Date().getMonth() >= 6 ? 1 : 0);
+  return {
+    year: `${y}-${y + 1}`,
+    defaults: { "Tenure track": [3, 3], "Lecturer": [4, 4], "Chair": [null, null], "Adjunct / ad hoc": [null, null], "Manual": [null, null] },
+    people: (BAKED ? BAKED.people : []).map(name => ({ name, position: "", fall: null, spring: null, reason: "", note: "" })),
+  };
+}
+let S;
+try { S = JSON.parse(localStorage.getItem(STORE)); } catch (e) {}
+if (!S || !S.people) S = fresh();
+const persist = () => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} };
+
+const dflt = p => (p.position && S.defaults[p.position]) || [null, null];
+const eff = (p, i) => { const v = i ? p.spring : p.fall; return v != null ? v : dflt(p)[i]; };
+const differs = p => p.position && [0, 1].some(i => { const d = dflt(p)[i]; return d != null && eff(p, i) != null && eff(p, i) !== d; });
+const missing = p => !p.position || eff(p, 0) == null || eff(p, 1) == null;
+const recentOf = name => {
+  if (!BAKED) return null;
+  const k = n => (n.split(/\s+/)[0] + " " + lastName(n)).toLowerCase();
+  return BAKED.recent[Object.keys(BAKED.recent).find(n => k(n) === k(name))] || null;
+};
+
+function semesters() {
+  const m = /^(\d{4})\s*-\s*(\d{4})$/.exec(S.year.trim());
+  return m ? [`Fall ${m[1]}`, `Spring ${m[2]}`] : ["Fall", "Spring"];
+}
+
+function renderDefaults() {
+  $("defaults").innerHTML = POSITIONS.filter(p => p !== "Manual").map(p => {
+    const [f, s] = S.defaults[p];
+    return `<label>${esc(p)} <input type="number" min="0" step="1" data-def="${esc(p)}" data-i="0" value="${f ?? ""}" aria-label="${esc(p)} Fall default">–<input type="number" min="0" step="1" data-def="${esc(p)}" data-i="1" value="${s ?? ""}" aria-label="${esc(p)} Spring default"></label>`;
+  }).join("") + `<span style="color:var(--muted);font-size:13px">Manual: type each load.</span>`;
+}
+
+function renderRows() {
+  const [fl, sp] = semesters();
+  $("h-fall").textContent = fl; $("h-spring").textContent = sp;
+  if (BAKED) $("h-recent").textContent = "Recent: " + BAKED.terms.map(t => t[0] + t.slice(-2)).join(" · ");
+  $("rows").innerHTML = S.people.map((p, k) => {
+    const d = dflt(p), r = recentOf(p.name);
+    const cell = i => { const v = i ? p.spring : p.fall;
+      return `<input type="number" min="0" step="1" data-k="${k}" data-f="${i ? "spring" : "fall"}" value="${v ?? d[i] ?? ""}" class="${v == null && d[i] != null ? "dflt" : ""}" aria-label="${esc(p.name)} ${i ? sp : fl}">`; };
+    const tot = (eff(p, 0) ?? 0) + (eff(p, 1) ?? 0);
+    const flag = differs(p) && !p.reason;
+    return `<tr class="${flag ? "flag" : ""}">
+      <td>${esc(p.name)}</td>
+      <td><select data-k="${k}" data-f="position" aria-label="${esc(p.name)} position"><option value="">Choose…</option>${POSITIONS.map(x => `<option ${x === p.position ? "selected" : ""}>${esc(x)}</option>`).join("")}</select></td>
+      <td class="n">${cell(0)}</td><td class="n">${cell(1)}</td>
+      <td class="n">${missing(p) ? '<span class="warn" title="Choose a position or type the loads">?</span>' : tot}</td>
+      <td><select data-k="${k}" data-f="reason" aria-label="${esc(p.name)} reason">${REASONS.map(x => `<option value="${esc(x)}" ${x === p.reason ? "selected" : ""}>${x || (flag ? "◆ give a reason" : "–")}</option>`).join("")}</select></td>
+      <td><input class="note" data-k="${k}" data-f="note" value="${esc(p.note)}" placeholder="e.g. sabbatical Spring" aria-label="${esc(p.name)} note"></td>
+      <td class="recent" title="${r ? esc(r.detail) : "No sections found under this name"}">${r ? r.counts.join(" · ") : "–"}</td>
+      <td><button class="x" data-del="${k}" title="Remove ${esc(p.name)}" aria-label="Remove ${esc(p.name)}">×</button></td></tr>`;
+  }).join("");
+}
+
+function renderSum() {
+  const [fl, sp] = semesters();
+  const f = S.people.reduce((t, p) => t + (eff(p, 0) ?? 0), 0), s = S.people.reduce((t, p) => t + (eff(p, 1) ?? 0), 0);
+  const miss = S.people.filter(missing).length, noReason = S.people.filter(p => differs(p) && !p.reason).length;
+  const ref = BAKED ? BAKED.offered : {};
+  $("sum").innerHTML = `
+    <div><b>${f}</b><small>sections covered, ${esc(fl)}</small></div>
+    <div><b>${s}</b><small>sections covered, ${esc(sp)}</small></div>
+    <div><b>${S.people.length}</b><small>people</small></div>
+    ${Object.keys(ref).length ? `<div><b style="color:var(--muted)">${Object.entries(ref).map(([t, n]) => `${n}`).join(" · ")}</b><small>sections offered ${Object.keys(ref).join(" · ")} (for comparison)</small></div>` : ""}
+    ${miss ? `<div><b class="warn">${miss}</b><small>still need a position or load</small></div>` : ""}
+    ${noReason ? `<div><b class="warn">◆ ${noReason}</b><small>differ from default without a reason</small></div>` : ""}`;
+  $("status").textContent = `Draft saved in this browser · ${S.year}`;
+}
+
+function render() { $("year").value = S.year; renderDefaults(); renderRows(); renderSum(); persist(); }
+const refresh = () => { renderRows(); renderSum(); persist(); };
+
+// ---- events
+$("year").addEventListener("change", e => { S.year = e.target.value.trim(); refresh(); });
+$("defaults").addEventListener("change", e => {
+  const t = e.target; if (!t.dataset.def) return;
+  S.defaults[t.dataset.def][+t.dataset.i] = t.value === "" ? null : Math.max(0, +t.value);
+  refresh();
+});
+$("rows").addEventListener("change", e => {
+  const t = e.target, k = t.dataset.k; if (k == null) return;
+  const p = S.people[+k], f = t.dataset.f;
+  if (f === "fall" || f === "spring") {
+    const v = t.value === "" ? null : Math.max(0, +t.value), d = dflt(p)[f === "fall" ? 0 : 1];
+    p[f] = v === d ? null : v;
+  } else p[f] = t.value;
+  refresh();
+});
+$("rows").addEventListener("click", e => {
+  const b = e.target.closest("[data-del]"); if (!b) return;
+  const p = S.people[+b.dataset.del];
+  if (confirm(`Remove ${p.name} from the list?`)) { S.people.splice(+b.dataset.del, 1); refresh(); }
+});
+const addPerson = () => {
+  const n = $("newname").value.trim(); if (!n) return;
+  if (S.people.some(p => p.name.toLowerCase() === n.toLowerCase())) { $("msg").textContent = `${n} is already in the list.`; return; }
+  S.people.push({ name: n, position: "", fall: null, spring: null, reason: "", note: "" });
+  S.people.sort((a, b) => lastName(a.name).localeCompare(lastName(b.name)));
+  $("newname").value = ""; $("msg").textContent = ""; refresh();
+};
+$("addbtn").addEventListener("click", addPerson);
+$("newname").addEventListener("keydown", e => { if (e.key === "Enter") addPerson(); });
+
+const COLS = ["academic_year", "name", "position", "fall_load", "spring_load", "total_load", "reason", "note", "default_fall", "default_spring"];
+$("save").addEventListener("click", () => {
+  const q = v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v ?? "");
+  const lines = [COLS.join(",")].concat(S.people.map(p => {
+    const f = eff(p, 0), s = eff(p, 1), d = dflt(p);
+    return [S.year, p.name, p.position, f ?? "", s ?? "", f == null && s == null ? "" : (f ?? 0) + (s ?? 0), p.reason, p.note, d[0] ?? "", d[1] ?? ""].map(q).join(",");
+  }));
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿" + lines.join("\r\n") + "\r\n"], { type: "text/csv" }));
+  a.download = `teaching_loads_${S.year || "draft"}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  $("msg").textContent = `Saved teaching_loads_${S.year}.csv to your Downloads folder.`;
+});
+
+function parseCSV(text) {
+  const rows = []; let row = [], f = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true; else if (c === ",") { row.push(f); f = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(f); rows.push(row); row = []; f = ""; }
+    else f += c;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim()));
+}
+$("open").addEventListener("change", async e => {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    const rows = parseCSV((await file.text()).replace(/^﻿/, ""));
+    const h = rows[0].map(x => x.trim().toLowerCase()), ix = c => h.indexOf(c);
+    if (ix("name") < 0 || ix("fall_load") < 0) throw new Error("This doesn't look like a saved Teaching Loads file.");
+    const num = v => v == null || v.trim() === "" ? null : +v;
+    const next = fresh();
+    next.year = rows[1]?.[ix("academic_year")] || next.year;
+    next.people = rows.slice(1).map(r => {
+      const pos = r[ix("position")] || "";
+      if (POSITIONS.includes(pos) && ix("default_fall") >= 0 && pos !== "Manual")
+        next.defaults[pos] = [num(r[ix("default_fall")]), num(r[ix("default_spring")])];
+      return { name: r[ix("name")], position: POSITIONS.includes(pos) ? pos : "", fall: num(r[ix("fall_load")]), spring: num(r[ix("spring_load")]),
+        reason: r[ix("reason")] || "", note: r[ix("note")] || "" };
+    });
+    S = next;
+    for (const p of S.people) for (const [i, f] of [[0, "fall"], [1, "spring"]]) if (p[f] != null && p[f] === dflt(p)[i]) p[f] = null;
+    render();
+    $("msg").textContent = `Opened ${file.name}: ${S.people.length} people, ${S.year}.`;
+  } catch (err) { $("msg").textContent = String(err.message || err); }
+  e.target.value = "";
+});
+$("reset").addEventListener("click", () => {
+  if (!confirm("Clear everything and start from the department list? (Save the file first if you want to keep this.)")) return;
+  S = fresh(); render(); $("msg").textContent = "";
+});
+document.querySelector("label .chip").addEventListener("keydown", e => { if (e.key === "Enter") $("open").click(); });
+
+render();
+</script>
+</body>
+</html>
