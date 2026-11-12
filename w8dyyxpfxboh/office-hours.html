@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Office Hours Now</title>
+<!-- Template for build_web_page.py. Edit this file, not "Office Hours Now.html". -->
+<style>
+:root {
+  --bg: #f6f5f9; --surface: #ffffff; --text: #1d1b22; --muted: #5f5b6b; --line: #e3e0ea;
+  --accent: #4b2e83; --accent-soft: #ece6f6; --inperson: #1b6e2a; --virtual: #0d4fa8; --class: #8a5a00;
+  --warn: #b71c1c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15131a; --surface: #1f1c26; --text: #ece9f2; --muted: #a7a1b4; --line: #34303e;
+    --accent: #b9a3e8; --accent-soft: #2c2540; --inperson: #7fd18f; --virtual: #8ab8ff; --class: #f0c070;
+    --warn: #ff8a80;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15131a; --surface: #1f1c26; --text: #ece9f2; --muted: #a7a1b4; --line: #34303e;
+  --accent: #b9a3e8; --accent-soft: #2c2540; --inperson: #7fd18f; --virtual: #8ab8ff; --class: #f0c070;
+  --warn: #ff8a80;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 16px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+h1 { margin: 0; font-size: 22px; color: var(--accent); }
+#clock { font-size: 20px; font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
+#clock small { font-weight: 400; color: var(--muted); font-size: 14px; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 12px 0;
+  padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.controls label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+select, input[type=time], button { font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; }
+button { cursor: pointer; }
+input[type=search] { font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; width: 100%; max-width: 280px; }
+nav { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+nav button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none;
+  padding: 8px 14px; color: var(--muted); font-weight: 600; }
+nav button[aria-selected=true] { color: var(--accent); border-bottom-color: var(--accent); }
+section.tab { display: none; padding-top: 8px; }
+section.tab.on { display: block; }
+h2 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent);
+  margin: 18px 0 6px; }
+h2 .n { color: var(--muted); font-weight: 400; }
+.tbl { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 13px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.t { white-space: nowrap; font-variant-numeric: tabular-nums; }
+td.empty { color: var(--muted); font-style: italic; }
+.name { color: inherit; background: none; border: 0; padding: 0; font-weight: 600; text-align: left;
+  text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+.name:hover { text-decoration-color: var(--accent); }
+.k { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.k-In-person { color: var(--inperson); } .k-Virtual { color: var(--virtual); } .k-Class { color: var(--class); }
+tr.none td { color: var(--muted); }
+tr.dayrow td { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+footer { margin-top: 16px; color: var(--muted); font-size: 13px; }
+dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text);
+  max-width: min(560px, calc(100vw - 32px)); padding: 18px 20px; }
+dialog::backdrop { background: rgb(0 0 0 / .35); }
+dialog h3 { margin: 0 0 8px; color: var(--accent); }
+dialog dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; }
+dialog dt { color: var(--muted); } dialog dd { margin: 0; white-space: pre-line; }
+dialog form { text-align: right; margin-top: 14px; }
+@media (max-width: 640px) { .hide-sm { display: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Office Hours Now</h1>
+    <div id="clock" aria-live="polite"></div>
+  </header>
+
+  <div class="controls">
+    <label><input type="radio" name="mode" value="now" checked> Now</label>
+    <label><input type="radio" name="mode" value="check"> Check:</label>
+    <select id="day" aria-label="Day"></select>
+    <input id="time" type="time" value="14:00" step="900" aria-label="Time">
+  </div>
+
+  <nav role="tablist">
+    <button role="tab" data-tab="now" aria-selected="true">Now</button>
+    <button role="tab" data-tab="week" aria-selected="false">Week</button>
+    <button role="tab" data-tab="people" aria-selected="false">People</button>
+  </nav>
+
+  <section class="tab on" id="tab-now">
+    <h2>In office hours <span class="n" id="n-in"></span></h2>
+    <div class="tbl"><table><thead><tr><th>Name</th><th>Mode</th><th>Where</th><th>Until</th><th class="hide-sm">Note</th></tr></thead><tbody id="t-in"></tbody></table></div>
+    <h2>Starting within 60 min <span class="n" id="n-soon"></span></h2>
+    <div class="tbl"><table><thead><tr><th>Name</th><th>Mode</th><th>Where</th><th>Starts</th><th class="hide-sm">Note</th></tr></thead><tbody id="t-soon"></tbody></table></div>
+    <h2>Teaching <span class="n" id="n-class"></span></h2>
+    <div class="tbl"><table><thead><tr><th>Name</th><th>Room</th><th>Until</th><th class="hide-sm">Class</th></tr></thead><tbody id="t-class"></tbody></table></div>
+  </section>
+
+  <section class="tab" id="tab-week">
+    <h2>Office hours by day</h2>
+    <div class="tbl"><table><thead><tr><th>Time</th><th>Name</th><th>Mode</th><th>Where</th><th class="hide-sm">Note</th></tr></thead><tbody id="t-week"></tbody></table></div>
+  </section>
+
+  <section class="tab" id="tab-people">
+    <h2>Everyone</h2>
+    <p><input type="search" id="q" placeholder="Filter by name…" aria-label="Filter people"></p>
+    <div class="tbl"><table><thead><tr><th>Name</th><th>Office</th><th class="hide-sm">Email</th><th>In person</th><th>Virtual</th></tr></thead><tbody id="t-people"></tbody></table></div>
+  </section>
+
+  <footer id="status"></footer>
+</div>
+
+<dialog id="dlg"><h3 id="dlg-name"></h3><dl id="dlg-body"></dl><form method="dialog"><button>Close</button></form></dialog>
+
+<script>
+const DATA = {"officeHours":[["Amir Gholami","In person",1,660,750,"3516",""],["Amir Gholami","In person",1,840,930,"3516",""],["Amir Gholami","Virtual",2,660,840,"",""],["Amir Gholami","In person",3,660,750,"3516",""],["Amir Gholami","In person",3,840,930,"3516",""],["Arjan Premti","In person",1,630,660,"3519",""],["Arjan Premti","In person",1,870,990,"3519",""],["Arjan Premti","Virtual",2,720,900,"",""],["Arjan Premti","In person",3,630,660,"3519",""],["Arjan Premti","In person",3,870,990,"3519",""],["Brandon Miles","In person",0,660,900,"4302A",""],["Brandon Miles","In person",2,660,900,"4302A",""],["Dennis Elverman","In person",1,650,740,"4302D",""],["Dennis Elverman","In person",1,840,900,"4302D",""],["Dennis Elverman","Virtual",2,540,720,"",""],["Dennis Elverman","In person",3,650,740,"4302D",""],["Dennis Elverman","In person",3,840,900,"4302D",""],["Gene Toboyek","In person",1,510,570,"3517",""],["Gene Toboyek","In person",1,735,825,"3517",""],["Gene Toboyek","In person",3,510,570,"3517",""],["Gene Toboyek","In person",3,735,825,"3517",""],["Gene Toboyek","Virtual",4,540,720,"",""],["He Li","In person",0,675,735,"3510",""],["He Li","In person",0,830,920,"3510",""],["He Li","In person",2,675,735,"3510",""],["He Li","In person",2,830,920,"3510",""],["He Li","Virtual",4,660,840,"","online, appointment required by Thursday 11:00 AM"],["Jeffrey Hahn","In person",0,480,570,"4302C",""],["Jeffrey Hahn","In person",0,750,840,"4302C",""],["Jeffrey Hahn","In person",0,1020,1080,"4302C",""],["Jeffrey Hahn","In person",2,480,570,"4302C",""],["Jeffrey Hahn","In person",2,1020,1080,"4302C",""],["Jeffrey Hahn","Virtual",4,540,960,"","by appointment"],["Mark Gmach","In person",0,420,480,"4302B",""],["Mark Gmach","In person",0,825,915,"4302B",""],["Mark Gmach","Virtual",1,480,660,"",""],["Mark Gmach","In person",2,420,480,"4302B",""],["Mark Gmach","In person",2,825,915,"4302B",""],["Mark Membrino","In person",1,870,930,"1209*",""],["Mark Membrino","In person",1,1005,1065,"1209*",""],["Mark Membrino","In person",3,870,930,"1209*",""],["Mark Membrino","In person",3,1005,1065,"1209*",""],["Md Showaib Rahman Sarker","In person",0,735,840,"3520",""],["Md Showaib Rahman Sarker","In person",0,915,960,"3520",""],["Md Showaib Rahman Sarker","Virtual",1,780,960,"","preferably 24 hours in advance"],["Md Showaib Rahman Sarker","In person",2,735,840,"3520",""],["Md Showaib Rahman Sarker","In person",2,915,960,"3520",""],["Neal Dihora","In person",0,840,900,"3522",""],["Neal Dihora","In person",1,600,1020,"3522",""],["Neal Dihora","In person",2,840,900,"3522",""],["Pascal Letourneau","In person",0,570,720,"3300B",""],["Pascal Letourneau","In person",2,570,720,"3300B",""],["Pascal Letourneau","Virtual",3,780,960,"",""],["Patrick M Roney","In person",0,790,835,"1209*",""],["Patrick M Roney","In person",0,915,960,"1209*",""],["Patrick M Roney","In person",2,790,835,"1209*",""],["Patrick M Roney","In person",2,915,960,"1209*",""],["Pengyu Qian","In person",0,660,750,"3518",""],["Pengyu Qian","In person",0,930,990,"3518",""],["Pengyu Qian","Virtual",1,600,780,"",""],["Pengyu Qian","In person",2,660,750,"3518",""],["Pengyu Qian","In person",2,930,990,"3518",""],["Rashiqa Kamal","In person",0,540,660,"3521",""],["Rashiqa Kamal","In person",0,825,855,"3521",""],["Rashiqa Kamal","Virtual",1,660,840,"",""],["Rashiqa Kamal","In person",2,540,660,"3521",""],["Rashiqa Kamal","In person",2,825,855,"3521",""],["Yanhui Zhao","In person",1,750,900,"3523",""],["Yanhui Zhao","In person",3,750,900,"3523",""],["Yanhui Zhao","Virtual",4,600,780,"",""],["Yankuo Qiao","In person",1,750,780,"3514",""],["Yankuo Qiao","In person",1,930,1050,"3514",""],["Yankuo Qiao","Virtual",2,600,780,"",""],["Yankuo Qiao","In person",3,750,780,"3514",""],["Yankuo Qiao","In person",3,930,1050,"3514",""],["Yuan Yuan","In person",0,735,885,"3513",""],["Yuan Yuan","Virtual",1,540,720,"",""],["Yuan Yuan","In person",2,735,885,"3513",""]],"classes":[["Amir Gholami","Class",1,570,645,"HH 2203","360 – FIN MKTS & INSTITUTIONS 03-LEC"],["Amir Gholami","Class",1,930,1005,"HH 3202","430 – FINANCIAL FUTURES/OPTIONS 01-LEC"],["Amir Gholami","Class",3,570,645,"HH 2203","360 – FIN MKTS & INSTITUTIONS 03-LEC"],["Amir Gholami","Class",3,930,1005,"HH 3202","430 – FINANCIAL FUTURES/OPTIONS 01-LEC"],["Arjan Premti","Class",1,660,735,"HH 2203","344 – BUSINESS FINANCE 05-LEC"],["Arjan Premti","Class",1,750,825,"HH 2203","344 – BUSINESS FINANCE 06-LEC"],["Arjan Premti","Class",3,660,735,"HH 2203","344 – BUSINESS FINANCE 05-LEC"],["Arjan Premti","Class",3,750,825,"HH 2203","344 – BUSINESS FINANCE 06-LEC"],["Bakhtear Talukdar","Class",0,750,825,"HH 1311","360 – FIN MKTS & INSTITUTIONS 01-LEC"],["Bakhtear Talukdar","Class",2,750,825,"HH 1311","360 – FIN MKTS & INSTITUTIONS 01-LEC"],["Brandon Miles","Class",0,480,555,"HH 1302","344 – BUSINESS FINANCE 01-LEC"],["Brandon Miles","Class",0,570,645,"HH 1302","344 – BUSINESS FINANCE 02-LEC"],["Brandon Miles","Class",1,570,645,"HH 1305","444 – CORPORATE FIN MGNT DEC 03-LEC"],["Brandon Miles","Class",1,660,735,"HH 1305","101 – PERSONAL FINANCE 04-LEC"],["Brandon Miles","Class",1,750,825,"HH 2310","101 – PERSONAL FINANCE 05-LEC"],["Brandon Miles","Class",2,480,555,"HH 1302","344 – BUSINESS FINANCE 01-LEC"],["Brandon Miles","Class",2,570,645,"HH 1302","344 – BUSINESS FINANCE 02-LEC"],["Brandon Miles","Class",3,570,645,"HH 1305","444 – CORPORATE FIN MGNT DEC 03-LEC"],["Brandon Miles","Class",3,660,735,"HH 1305","101 – PERSONAL FINANCE 04-LEC"],["Brandon Miles","Class",3,750,825,"HH 2310","101 – PERSONAL FINANCE 05-LEC"],["Dennis Elverman","Class",1,480,555,"HH 1311","341 – BUSINESS & COMMERCIAL LAW 04-LEC"],["Dennis Elverman","Class",1,570,645,"HH 1311","341 – BUSINESS & COMMERCIAL LAW 05-LEC"],["Dennis Elverman","Class",1,750,825,"HH 1311","434 – REAL ESTATE LAW 01-LEC"],["Dennis Elverman","Class",3,480,555,"HH 1311","341 – BUSINESS & COMMERCIAL LAW 04-LEC"],["Dennis Elverman","Class",3,570,645,"HH 1311","341 – BUSINESS & COMMERCIAL LAW 05-LEC"],["Dennis Elverman","Class",3,750,825,"HH 1311","434 – REAL ESTATE LAW 01-LEC"],["Gene Toboyek","Class",1,570,645,"HH 2317","401 – ESSENTIAL FINANCIAL PLANN 01-LEC"],["Gene Toboyek","Class",1,660,735,"HH 2317","341 – BUSINESS & COMMERCIAL LAW 06-LEC"],["Gene Toboyek","Class",1,840,915,"HH 1305","442 – ESTATES AND TRUSTS 01-LEC"],["Gene Toboyek","Class",3,570,645,"HH 2317","401 – ESSENTIAL FINANCIAL PLANN 01-LEC"],["Gene Toboyek","Class",3,660,735,"HH 2317","341 – BUSINESS & COMMERCIAL LAW 06-LEC"],["Gene Toboyek","Class",3,840,915,"HH 1305","442 – ESTATES AND TRUSTS 01-LEC"],["He Li","Class",0,750,825,"HH 1305","456 – SECURITY ANALYSIS 01-LEC"],["He Li","Class",2,750,825,"HH 1305","456 – SECURITY ANALYSIS 01-LEC"],["Jeffrey Hahn","Class",0,570,645,"HH 1311","341 – BUSINESS & COMMERCIAL LAW 01-LEC"],["Jeffrey Hahn","Class",0,660,735,"HH 1311","341 – BUSINESS & COMMERCIAL LAW 02-LEC"],["Jeffrey Hahn","Class",0,840,915,"HH 1311","455 – CORP GOV & ADMIN LAW 01-LEC"],["Jeffrey Hahn","Class",0,930,1005,"HH 1311","341 – BUSINESS & COMMERCIAL LAW 07-LEC"],["Jeffrey Hahn","Class",2,570,645,"HH 1311","341 – BUSINESS & COMMERCIAL LAW 01-LEC"],["Jeffrey Hahn","Class",2,660,735,"HH 1311","341 – BUSINESS & COMMERCIAL LAW 02-LEC"],["Jeffrey Hahn","Class",2,840,915,"HH 1311","455 – CORP GOV & ADMIN LAW 01-LEC"],["Jeffrey Hahn","Class",2,930,1005,"HH 1311","341 – BUSINESS & COMMERCIAL LAW 07-LEC"],["Mark Gmach","Class",0,480,555,"HH 2203","345 – INVESTMENTS 01-LEC"],["Mark Gmach","Class",0,570,645,"HH 2203","101 – PERSONAL FINANCE 01-LEC"],["Mark Gmach","Class",0,660,735,"HH 2203","101 – PERSONAL FINANCE 02-LEC"],["Mark Gmach","Class",0,750,825,"HH 2203","101 – PERSONAL FINANCE 03-LEC"],["Mark Gmach","Class",2,480,555,"HH 2203","345 – INVESTMENTS 01-LEC"],["Mark Gmach","Class",2,570,645,"HH 2203","101 – PERSONAL FINANCE 01-LEC"],["Mark Gmach","Class",2,660,735,"HH 2203","101 – PERSONAL FINANCE 02-LEC"],["Mark Gmach","Class",2,750,825,"HH 2203","101 – PERSONAL FINANCE 03-LEC"],["Mark Membrino","Class",1,930,1005,"HH 1302","458 – REAL ESTATE INVESTMENTS 01-LEC"],["Mark Membrino","Class",3,930,1005,"HH 1302","458 – REAL ESTATE INVESTMENTS 01-LEC"],["Md Showaib Rahman Sarker","Class",0,570,645,"HH 1305","444 – CORPORATE FIN MGNT DEC 02-LEC"],["Md Showaib Rahman Sarker","Class",0,660,735,"HH 1305","444 – CORPORATE FIN MGNT DEC 01-LEC"],["Md Showaib Rahman Sarker","Class",0,840,915,"HH 1305","348 – REAL ESTATE 01-LEC"],["Md Showaib Rahman Sarker","Class",2,570,645,"HH 1305","444 – CORPORATE FIN MGNT DEC 02-LEC"],["Md Showaib Rahman Sarker","Class",2,660,735,"HH 1305","444 – CORPORATE FIN MGNT DEC 01-LEC"],["Md Showaib Rahman Sarker","Class",2,840,915,"HH 1305","348 – REAL ESTATE 01-LEC"],["Neal Dihora","Class",0,660,735,"HH 2202","472 – BLOOMBERG FS & WS PREP 02-LEC"],["Neal Dihora","Class",0,750,825,"HH 2202","472 – BLOOMBERG FS & WS PREP 01-LEC"],["Neal Dihora","Class",0,930,1005,"HH 2203","344 – BUSINESS FINANCE 03-LEC"],["Neal Dihora","Class",2,660,735,"HH 2202","472 – BLOOMBERG FS & WS PREP 02-LEC"],["Neal Dihora","Class",2,750,825,"HH 2202","472 – BLOOMBERG FS & WS PREP 01-LEC"],["Neal Dihora","Class",2,930,1005,"HH 2203","344 – BUSINESS FINANCE 03-LEC"],["Neal Dihora","Class",2,1020,1170,"HH 2202","484 – APPLIED INVESTMENTS 01-LEC"],["Patrick M Roney","Class",0,840,915,"HH 2203","341 – BUSINESS & COMMERCIAL LAW 03-LEC"],["Patrick M Roney","Class",2,840,915,"HH 2203","341 – BUSINESS & COMMERCIAL LAW 03-LEC"],["Pengyu Qian","Class",0,750,825,"HH 2317","344 – BUSINESS FINANCE 04-LEC"],["Pengyu Qian","Class",0,840,915,"HH 2317","402 – ADV RET & FINANCIAL PLAN 01-LEC"],["Pengyu Qian","Class",2,750,825,"HH 2317","344 – BUSINESS FINANCE 04-LEC"],["Pengyu Qian","Class",2,840,915,"HH 2317","402 – ADV RET & FINANCIAL PLAN 01-LEC"],["Rashiqa Kamal","Class",0,660,735,"HH 1302","360 – FIN MKTS & INSTITUTIONS 02-LEC"],["Rashiqa Kamal","Class",2,660,735,"HH 1302","360 – FIN MKTS & INSTITUTIONS 02-LEC"],["Yanhui Zhao","Class",1,660,735,"HH 1311","345 – INVESTMENTS 03-LEC"],["Yanhui Zhao","Class",3,660,735,"HH 1311","345 – INVESTMENTS 03-LEC"],["Yankuo Qiao","Class",1,570,645,"HH 1302","456 – SECURITY ANALYSIS 02-LEC"],["Yankuo Qiao","Class",1,660,735,"HH 1302","456 – SECURITY ANALYSIS 03-LEC"],["Yankuo Qiao","Class",1,840,915,"HH 1302","345 – INVESTMENTS 02-LEC"],["Yankuo Qiao","Class",3,570,645,"HH 1302","456 – SECURITY ANALYSIS 02-LEC"],["Yankuo Qiao","Class",3,660,735,"HH 1302","456 – SECURITY ANALYSIS 03-LEC"],["Yankuo Qiao","Class",3,840,915,"HH 1302","345 – INVESTMENTS 02-LEC"],["Yuan Yuan","Class",0,570,645,"HH 2317","446 – INSURANCE 01-LEC"],["Yuan Yuan","Class",0,660,735,"HH 2317","460 – ADV PRPTY/CASUALTY INS 01-LEC"],["Yuan Yuan","Class",2,570,645,"HH 2317","446 – INSURANCE 01-LEC"],["Yuan Yuan","Class",2,660,735,"HH 2317","460 – ADV PRPTY/CASUALTY INS 01-LEC"]],"people":[{"name":"Neal Dihora","office":"3522","email":"dihoran@uww.edu","phone":"262-472-5445","in_person_text":"Monday & Wednesday 2:00 PM – 3:00 PM\nTuesday 10:00 AM – 5:00 PM","virtual_text":"","by_appointment":"Other times by appointment","notes":""},{"name":"Dennis Elverman","office":"4302D","email":"elvermnad@uww.edu","phone":"262-472-2191","in_person_text":"Tuesday and Thursday: 10:50 AM – 12:20 PM, and 2:00 PM – 3:00 PM","virtual_text":"Wednesday: 9:00 AM – 12:00 PM","by_appointment":"Other times by appointment","notes":""},{"name":"Amir Gholami","office":"3516","email":"gholamia@uww.edu","phone":"262-472-6945","in_person_text":"Tuesday & Thursday: 11:00 AM – 12:30 PM & 2:00 PM – 3:30 PM","virtual_text":"Wednesday: 11:00 AM – 2:00 PM","by_appointment":"Other times by appointment","notes":""},{"name":"Mark Gmach","office":"4302B","email":"gmach@uww.edu","phone":"262-472-7108","in_person_text":"Monday & Wednesday: 7:00 AM – 8:00 AM and 1:45 PM – 3:15 PM","virtual_text":"Tuesday: 8:00 AM – 11:00 AM","by_appointment":"Other times by appointment","notes":"Arranged via email"},{"name":"Jeffrey Hahn","office":"4302C","email":"hahnj@uww.edu","phone":"262-472-5461","in_person_text":"Monday & Wednesday 8:00 AM – 9:30 AM, 5:00 PM – 6:00 PM\nMonday 12:30 PM – 2:00 PM","virtual_text":"Friday 9:00 AM – 4:00 PM (by appointment)","by_appointment":"Other times by appointment","notes":""},{"name":"Rashiqa Kamal","office":"3521","email":"kamalr@uww.edu","phone":"262-472-5446","in_person_text":"Monday & Wednesday: 9:00 – 11:00 AM and 1:45 PM – 2:15 PM","virtual_text":"Tuesday 11:00 AM – 2:00 PM","by_appointment":"Other times by appointment","notes":""},{"name":"Pascal Letourneau","office":"3300B","email":"letournp@uww.edu","phone":"262-472-3209","in_person_text":"Monday & Wednesday: 9:30 AM – 12:00 PM","virtual_text":"Thursday: 1:00 PM – 4:00 PM","by_appointment":"Other times by appointment","notes":""},{"name":"He Li","office":"3510","email":"zhaoy@uww.edu","phone":"262-472-1326","in_person_text":"Monday & Wednesday: 11:15 AM – 12:15 PM, 1:50 PM – 3:20 PM","virtual_text":"Friday: 11:00 AM – 2:00 PM (online, appointment required by Thursday 11:00 AM)","by_appointment":"Other times by appointment","notes":""},{"name":"Mark Membrino","office":"1209*","email":"membrinm@uww.edu","phone":"262-472-5466","in_person_text":"Tuesday & Thursday: 2:30 - 3:30 PM & 4:45 PM - 5:45 PM","virtual_text":"","by_appointment":"Other times by appointment","notes":""},{"name":"Brandon Miles","office":"4302A","email":"milesb@uww.edu","phone":"262-472-1923","in_person_text":"Monday & Wednesday: 11:00 AM - 3:00 PM","virtual_text":"","by_appointment":"Other times by appointment","notes":""},{"name":"Arjan Premti","office":"3519","email":"premtia@uww.edu","phone":"262-472-5462","in_person_text":"Tuesday and Thursday 10:30 AM – 11:00 AM & 2:30 PM – 4:30 PM","virtual_text":"Wednesday: 12:00 PM – 3:00 PM","by_appointment":"Other times by appointment","notes":""},{"name":"Pengyu Qian","office":"3518","email":"qianp@uww.edu","phone":"262-472-1229","in_person_text":"Monday & Wednesday: 11:00 AM – 12:30 PM & 3:30 PM – 4:30 PM","virtual_text":"Tuesday: 10:00 AM – 1:00 PM","by_appointment":"Other times by appointment","notes":""},{"name":"Yankuo Qiao","office":"3514","email":"qiaoy@uww.edu","phone":"262-472-5460","in_person_text":"Tuesday & Thursday: 12:30 PM – 1:00 PM, 3:30 PM – 5:30 PM","virtual_text":"Wednesday: 10:00 AM – 1:00 PM","by_appointment":"Other times by appointment","notes":""},{"name":"Patrick M Roney","office":"1209*","email":"roneyp@uww.edu","phone":"262-472-5466","in_person_text":"Monday & Wednesday: 1:10 PM – 1:55 PM, 3:15 PM – 4:00 PM","virtual_text":"","by_appointment":"Other times by appointment","notes":""},{"name":"Md Showaib Rahman Sarker","office":"3520","email":"sarkerm@uww.edu","phone":"262-472-1029","in_person_text":"Monday: 12:15 PM – 2:00 PM & 3:15 PM – 4:00 PM  Wednesday: 12:15 PM – 2:00 PM & 3:15 PM – 4:00 PM","virtual_text":"Tuesday, 1:00–4:00 PM. Book through Canvas → Cisco Webex → Office Hours (preferably 24 hours in advance). Drop-ins welcome.","by_appointment":"Other times by appointment","notes":""},{"name":"Bakhtear Talukdar","office":"3515","email":"talukdam@uww.edu","phone":"262-472-7036","in_person_text":"","virtual_text":"","by_appointment":"","notes":""},{"name":"Gene Toboyek","office":"3517","email":"toboyekg@uww.edu","phone":"262-472-3950","in_person_text":"Tuesday & Thursday: 8:30 AM – 9:30 AM\nTuesday & Thursday: 12:15 PM – 1:45 PM","virtual_text":"Friday: 9:00 AM – 12:00 PM","by_appointment":"Other times by appointment","notes":""},{"name":"Yuan Yuan","office":"3513","email":"yuany@uww.edu","phone":"262-472-5458","in_person_text":"Monday & Wednesday: 12:15 PM – 2:45 PM","virtual_text":"Tuesday 9:00 AM – 12:00 PM","by_appointment":"Other times by appointment","notes":""},{"name":"Yanhui Zhao","office":"3523","email":"zhaoya@uww.edu","phone":"262-472-1299","in_person_text":"Tuesday & Thursday: 12:30 PM – 3:00 PM","virtual_text":"Friday: 10:00 AM – 1:00 PM","by_appointment":"Other times by appointment","notes":"Additional times available by appointment as a supplementary option."}],"exported":"Nov 05 2026 09:16 AM"};
+const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const DAYS_LONG = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const SOON = 60;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = m => { const h = Math.floor(m / 60), mi = m % 60;
+  return `${(h + 11) % 12 + 1}:${String(mi).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
+// slot = [name, kind, day(0=Mon), startMin, endMin, where, note]
+const S = { name: 0, kind: 1, day: 2, start: 3, end: 4, where: 5, note: 6 };
+const where = s => s[S.where] || (s[S.kind] === "Virtual" ? "online" : "");
+const nameBtn = n => `<button class="name" data-person="${esc(n)}">${esc(n)}</button>`;
+const kind = k => `<span class="k k-${esc(k).replace(" ", "-")}">${esc(k)}</span>`;
+
+function when() {
+  if (document.querySelector("input[name=mode]:checked").value === "now") {
+    const d = new Date();
+    return { day: (d.getDay() + 6) % 7, min: d.getHours() * 60 + d.getMinutes(), now: true, date: d };
+  }
+  const [h, m] = ($("time").value || "14:00").split(":").map(Number);
+  return { day: +$("day").value, min: h * 60 + m, now: false };
+}
+const activeAt = (slots, w) => slots.filter(s => s[S.day] === w.day && s[S.start] <= w.min && w.min < s[S.end])
+  .sort((a, b) => a[S.end] - b[S.end] || a[S.name].localeCompare(b[S.name]));
+const startingWithin = (slots, w) => slots.filter(s => s[S.day] === w.day && w.min < s[S.start] && s[S.start] <= w.min + SOON)
+  .sort((a, b) => a[S.start] - b[S.start] || a[S.name].localeCompare(b[S.name]));
+
+function fill(id, rows, cols) {
+  $(id).innerHTML = rows.length ? rows.join("") : `<tr><td class="empty" colspan="${cols}">Nobody</td></tr>`;
+}
+
+function refresh() {
+  const w = when();
+  const label = w.now
+    ? w.date.toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+    : `<small>Checking</small> ${DAYS_LONG[w.day]} ${fmt(w.min)}`;
+  $("clock").innerHTML = label;
+  const ohRow = (s, t) => `<tr><td>${nameBtn(s[S.name])}</td><td>${kind(s[S.kind])}</td><td>${esc(where(s))}</td><td class="t">${fmt(t)}</td><td class="hide-sm">${esc(s[S.note])}</td></tr>`;
+  const inNow = activeAt(DATA.officeHours, w), soon = startingWithin(DATA.officeHours, w), cls = activeAt(DATA.classes, w);
+  $("n-in").textContent = `(${inNow.length})`; $("n-soon").textContent = `(${soon.length})`; $("n-class").textContent = `(${cls.length})`;
+  fill("t-in", inNow.map(s => ohRow(s, s[S.end])), 5);
+  fill("t-soon", soon.map(s => ohRow(s, s[S.start])), 5);
+  fill("t-class", cls.map(s => `<tr><td>${nameBtn(s[S.name])}</td><td>${esc(s[S.where])}</td><td class="t">${fmt(s[S.end])}</td><td class="hide-sm">${esc(s[S.note])}</td></tr>`), 4);
+}
+
+function buildStatic() {
+  const rows = [];
+  for (let d = 0; d < 5; d++) {
+    rows.push(`<tr class="dayrow"><td colspan="5">${DAYS_LONG[d]}</td></tr>`);
+    DATA.officeHours.filter(s => s[S.day] === d)
+      .sort((a, b) => a[S.start] - b[S.start] || a[S.name].localeCompare(b[S.name]))
+      .forEach(s => rows.push(`<tr><td class="t">${fmt(s[S.start])} – ${fmt(s[S.end])}</td><td>${nameBtn(s[S.name])}</td><td>${kind(s[S.kind])}</td><td>${esc(where(s))}</td><td class="hide-sm">${esc(s[S.note])}</td></tr>`));
+  }
+  $("t-week").innerHTML = rows.join("");
+  renderPeople();
+  const n = new Set(DATA.officeHours.map(s => s[S.name])).size;
+  $("status").textContent = `${n} faculty with hours · ${DATA.officeHours.length} office-hour slots · data exported ${DATA.exported} · click a name for details`;
+}
+
+function renderPeople() {
+  const q = $("q").value.trim().toLowerCase();
+  const has = new Set(DATA.officeHours.map(s => s[S.name]));
+  const last = n => n.split(" ").pop();
+  const br = t => esc(t).replace(/\n/g, "<br>");
+  $("t-people").innerHTML = DATA.people
+    .filter(p => !q || p.name.toLowerCase().includes(q))
+    .sort((a, b) => last(a.name).localeCompare(last(b.name)))
+    .map(p => `<tr class="${has.has(p.name) ? "" : "none"}"><td>${nameBtn(p.name)}</td><td>${esc(p.office)}</td><td class="hide-sm">${p.email ? `<a href="mailto:${esc(p.email)}">${esc(p.email)}</a>` : ""}</td><td>${br(p.in_person_text)}</td><td>${br(p.virtual_text)}</td></tr>`)
+    .join("");
+}
+
+function showPerson(name) {
+  const p = DATA.people.find(x => x.name === name);
+  if (!p) return;
+  const mine = DATA.officeHours.filter(s => s[S.name] === name).sort((a, b) => a[S.day] - b[S.day] || a[S.start] - b[S.start]);
+  const items = [
+    ["Office", p.office], ["Phone", p.phone],
+    ["Email", p.email ? `<a href="mailto:${esc(p.email)}">${esc(p.email)}</a>` : "", true],
+    ["In person", p.in_person_text || "–"], ["Virtual", p.virtual_text || "–"],
+    ["Other", p.by_appointment], ["Notes", p.notes],
+    ["Slots", mine.map(s => `${DAYS[s[S.day]]} ${fmt(s[S.start])}–${fmt(s[S.end])} ${s[S.kind]}`).join("\n") || "–"],
+  ];
+  $("dlg-name").textContent = name;
+  $("dlg-body").innerHTML = items.filter(i => i[1]).map(([k, v, raw]) => `<dt>${k}</dt><dd>${raw ? v : esc(v)}</dd>`).join("");
+  $("dlg").showModal();
+}
+
+// ---- wiring ----
+$("day").innerHTML = DAYS.slice(0, 5).map((d, i) => `<option value="${i}">${d}</option>`).join("");
+$("day").value = Math.min((new Date().getDay() + 6) % 7, 4);
+const toCheck = () => { document.querySelector("input[name=mode][value=check]").checked = true; refresh(); };
+$("day").addEventListener("change", toCheck);
+$("time").addEventListener("change", toCheck);
+document.querySelectorAll("input[name=mode]").forEach(r => r.addEventListener("change", refresh));
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("nav button").forEach(x => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll("section.tab").forEach(s => s.classList.toggle("on", s.id === "tab-" + b.dataset.tab));
+}));
+$("q").addEventListener("input", renderPeople);
+document.addEventListener("click", e => { const b = e.target.closest("[data-person]"); if (b) showPerson(b.dataset.person); });
+
+if (!DATA) {
+  document.querySelector(".wrap").innerHTML = '<h1>Office Hours Now</h1><p style="color:var(--warn)">No data baked in. Run <b>build_web_page.py</b> (or Export Office Hours.bat) to generate this page.</p>';
+} else {
+  buildStatic(); refresh();
+  setInterval(() => { if (when().now) refresh(); }, 30000);
+}
+</script>
+</body>
+</html>
