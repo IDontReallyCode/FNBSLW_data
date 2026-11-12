@@ -1,0 +1,983 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schedule Editor</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f5f9; --surface: #ffffff; --surface2: #faf9fc; --text: #1d1b22; --muted: #5f5b6b; --faint: #8b8697; --line: #e3e0ea;
+  --accent: #4b2e83; --accent-soft: #ece6f6;
+  --g1: #4b2e83; --g1-soft: #efe9f8; --g2: #0f766e; --g2-soft: #e3f4f1; --g3: #8b8697; --g3-soft: #f3f2f6;
+  --err: #c62828; --err-soft: #fdecec; --warn: #b26a00; --warn-soft: #fff4dc; --hint: #2563b8; --hint-soft: #e8f0fb; --ok: #1b6e2a;
+  --good: #0ca30c; --mid: #fab219; --crit: #d03b3b;
+  --card: #ffffff; --online: #eef3fb;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #141317; --surface: #1d1b22; --surface2: #222029; --text: #ece9f2; --muted: #a7a1b4; --faint: #7d7889; --line: #34303e;
+    --accent: #b9a3e8; --accent-soft: #2c2540;
+    --g1: #b9a3e8; --g1-soft: #2a2340; --g2: #5eead4; --g2-soft: #173230; --g3: #8b8697; --g3-soft: #23212a;
+    --err: #ff8a80; --err-soft: #3b1d1d; --warn: #f0b860; --warn-soft: #3a2f1a; --hint: #7fb0f0; --hint-soft: #1c2638; --ok: #7fd18f;
+    --card: #26232e; --online: #1f2633;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #141317; --surface: #1d1b22; --surface2: #222029; --text: #ece9f2; --muted: #a7a1b4; --faint: #7d7889; --line: #34303e;
+  --accent: #b9a3e8; --accent-soft: #2c2540;
+  --g1: #b9a3e8; --g1-soft: #2a2340; --g2: #5eead4; --g2-soft: #173230; --g3: #8b8697; --g3-soft: #23212a;
+  --err: #ff8a80; --err-soft: #3b1d1d; --warn: #f0b860; --warn-soft: #3a2f1a; --hint: #7fb0f0; --hint-soft: #1c2638; --ok: #7fd18f;
+  --card: #26232e; --online: #1f2633;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 13.5px/1.4 "Segoe UI", system-ui, -apple-system, sans-serif; }
+.wrap { padding: 12px 16px 24px; }
+header { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between; }
+h1 { margin: 0; font-size: 21px; color: var(--accent); }
+button, input, select, textarea { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 4px 9px; }
+button { cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: .45; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+button.danger:hover { border-color: var(--err); color: var(--err); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; padding: 8px 10px; margin: 10px 0; }
+.toolbar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 3px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; }
+.chip { border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; color: var(--muted); background: var(--surface); }
+.chip.ok { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, var(--line)); }
+.chip.missing { color: var(--faint); border-style: dashed; }
+.tabs { display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid var(--line); align-items: end; }
+.tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; padding: 7px 12px; color: var(--muted); font-weight: 600; }
+.tabs button[aria-selected=true] { color: var(--accent); border-bottom-color: var(--accent); }
+.tabs .count { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 0 6px; margin-left: 4px; }
+.tabs .count.e { background: var(--err-soft); color: var(--err); } .tabs .count.w { background: var(--warn-soft); color: var(--warn); }
+.tabs .spacer { flex: 1; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 12px; margin-top: 10px; align-items: start; }
+@media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+.main { min-width: 0; }
+.issues { position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow: auto; padding: 10px; }
+.issues h2 { font-size: 14px; margin: 0 0 6px; display: flex; justify-content: space-between; align-items: baseline; }
+.issues h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; margin: 12px 0 4px; }
+.issues h3.e { color: var(--err); } .issues h3.w { color: var(--warn); } .issues h3.h { color: var(--hint); }
+.issue { display: block; width: 100%; text-align: left; border: 0; border-left: 3px solid; border-radius: 4px; padding: 5px 7px; margin: 3px 0; font-size: 12.5px; background: var(--surface2); }
+.issue.e { border-left-color: var(--err); } .issue.w { border-left-color: var(--warn); } .issue.h { border-left-color: var(--hint); }
+.issue:hover { background: var(--accent-soft); }
+.none { color: var(--ok); font-size: 13px; }
+/* grids */
+.gridwrap { overflow: auto; max-height: calc(100vh - 210px); }
+table.grid { border-collapse: separate; border-spacing: 0; }
+.grid th, .grid td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 3px; vertical-align: top; }
+.grid thead th { position: sticky; top: 0; z-index: 3; background: var(--surface); font-size: 11.5px; color: var(--muted); font-weight: 600; text-align: center; min-width: 104px; white-space: nowrap; padding: 5px 4px; }
+.grid thead th small { display: block; font-weight: 400; color: var(--faint); }
+.grid thead th.extra { background: var(--surface2); }
+.grid th.rowh { position: sticky; left: 0; z-index: 2; background: var(--surface); text-align: left; min-width: 150px; max-width: 190px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.grid thead th.corner { left: 0; z-index: 4; text-align: left; }
+.grid th.rowh small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+.grid th.rowh .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+.grid tr.grp-head th { position: sticky; left: 0; background: var(--surface2); text-align: left; font-size: 12px; color: var(--muted); padding: 5px 8px; }
+.grid tr.g1 th.rowh { box-shadow: inset 4px 0 0 var(--g1); } .grid tr.g2 th.rowh { box-shadow: inset 4px 0 0 var(--g2); } .grid tr.g3 th.rowh { box-shadow: inset 4px 0 0 var(--g3); }
+.grid tr.g1 td { background: var(--g1-soft); } .grid tr.g2 td { background: var(--g2-soft); } .grid tr.g3 td { background: var(--g3-soft); }
+.grid td.cell { min-width: 104px; height: 46px; }
+.grid td.cell.over { outline: 2px dashed var(--accent); outline-offset: -3px; }
+.grid td.cell.free.over { background: var(--accent-soft); }
+.card { position: relative; background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 6px; padding: 3px 5px; margin: 1px 0; cursor: grab; font-size: 11.5px; line-height: 1.25; user-select: none; }
+.card:active { cursor: grabbing; }
+.card b { font-size: 12px; }
+.card .who { color: var(--muted); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+.card .meta { color: var(--faint); font-size: 10.5px; }
+.card.online { background: var(--online); border-left-color: var(--hint); }
+.card.err { border-color: var(--err); border-left-color: var(--err); box-shadow: 0 0 0 1px var(--err); }
+.card.warn { border-left-color: var(--warn); }
+.card.flash { animation: flash 1.2s ease 2; }
+@keyframes flash { 50% { box-shadow: 0 0 0 4px var(--accent); } }
+.card.dragging { opacity: .4; }
+.exp { float: right; font-size: 10px; font-weight: 700; padding: 0 4px; border-radius: 4px; margin-left: 3px; }
+.exp.good { background: color-mix(in srgb, var(--good) 22%, transparent); } .exp.mid { background: color-mix(in srgb, var(--mid) 32%, transparent); } .exp.crit { background: color-mix(in srgb, var(--crit) 28%, transparent); }
+.tray { padding: 8px; margin-top: 10px; min-height: 60px; }
+.tray h3 { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
+.tray .cards { display: flex; flex-wrap: wrap; gap: 6px; }
+.tray .card { width: 150px; }
+.tray.over { outline: 2px dashed var(--accent); }
+.gridopts { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 12.5px; color: var(--muted); margin: 8px 0 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin: 0 4px 0 8px; }
+/* table view */
+.tbl { overflow: auto; max-height: calc(100vh - 210px); }
+table.list { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+.list th, .list td { padding: 5px 7px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.list th { position: sticky; top: 0; background: var(--surface); color: var(--muted); font-size: 11.5px; cursor: pointer; }
+.list tbody tr { cursor: pointer; }
+.list tbody tr:hover td { background: var(--accent-soft); }
+.list tr.err td:first-child { box-shadow: inset 3px 0 0 var(--err); }
+.list tr.warn td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
+.log { padding: 10px 14px; font-size: 12.5px; }
+.log li { margin: 3px 0; }
+.log time { color: var(--faint); margin-right: 6px; }
+dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); padding: 16px 18px; width: min(640px, calc(100vw - 24px)); }
+dialog::backdrop { background: rgb(0 0 0 / .35); }
+dialog h2 { margin: 0 0 10px; font-size: 17px; color: var(--accent); }
+.form { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 10px; }
+.form label { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--muted); font-weight: 600; }
+.form label.w2 { grid-column: span 2; } .form label.w4 { grid-column: span 4; }
+.form input, .form select, .form textarea { width: 100%; font-weight: 400; }
+.presets { display: flex; flex-wrap: wrap; gap: 4px; grid-column: span 4; }
+.presets button { font-size: 11.5px; padding: 2px 6px; }
+.dlgbar { display: flex; gap: 8px; margin-top: 14px; justify-content: space-between; flex-wrap: wrap; }
+.flags { grid-column: span 4; font-size: 12px; color: var(--warn); }
+#msg { font-size: 12.5px; color: var(--muted); min-height: 1.2em; margin: 4px 2px; white-space: pre-line; }
+#msg.err { color: var(--err); }
+.empty { padding: 30px; text-align: center; color: var(--muted); }
+.empty ol { text-align: left; display: inline-block; margin: 10px 0 0; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Schedule Editor</h1>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <div class="panel toolbar" role="toolbar" aria-label="Actions">
+    <input type="file" id="files" multiple accept=".xlsx,.xlsm,.csv" class="sr" tabindex="-1" aria-hidden="true">
+    <button class="primary" id="b-open" title="Schedule (AI draft, saved file, or AY Memo), hyland_classrooms.xlsx, teaching loads, section plan, soft constraints. Several at once is fine.">Open files…</button>
+    <button id="b-rooms" title="Pick hyland_classrooms.xlsx again: capacities and groups update, checks rerun">Reload rooms…</button>
+    <span class="sep"></span>
+    <button id="b-undo" title="Undo (Ctrl+Z)">↶ Undo</button>
+    <button id="b-redo" title="Redo (Ctrl+Y)">↷ Redo</button>
+    <button id="b-add">+ Add section</button>
+    <span class="sep"></span>
+    <button id="b-save" title="The working file: open it again later to continue">Save schedule (.csv)</button>
+    <button id="b-ay" title="One sheet per term, AY Memo columns, to paste into the official file">Export AY Memo columns (.xlsx)</button>
+    <button id="b-audit" title="Schedule + change log + remaining issues + instructions, for the AI audit">Export for AI audit (.xlsx)</button>
+    <button id="b-format" title="Blank file with the exact columns the AI must use, plus instructions">Draft format for AI (.xlsx)</button>
+    <span class="sep"></span>
+    <button id="b-clear" class="danger">Clear…</button>
+  </div>
+  <div id="msg" role="status" aria-live="polite"></div>
+
+  <nav class="tabs" id="termtabs" aria-label="Term"></nav>
+  <div class="layout">
+    <section class="main" aria-label="Schedule">
+      <nav class="tabs" id="viewtabs" aria-label="View"></nav>
+      <div id="view"></div>
+    </section>
+    <aside class="panel issues" id="issues" aria-label="Issues"></aside>
+  </div>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlg-title">
+  <form method="dialog" id="dform">
+    <h2 id="dlg-title">Section</h2>
+    <div class="form">
+      <label class="w2">Course<input name="course" required placeholder="FNBSLW 344"></label>
+      <label>Section<input name="section" placeholder="01"></label>
+      <label>Credits<input name="credits" type="number" min="0" step="1"></label>
+      <label class="w4">Title<input name="title"></label>
+      <label>Term<select name="term"></select></label>
+      <label>Session<input name="session" placeholder="Full Term" list="dl-session"></label>
+      <label>Modality<select name="modality"><option>F2F</option><option>Online</option><option>IS</option><option>Hybrid</option></select></label>
+      <label>Cap<input name="cap" type="number" min="0" step="1"></label>
+      <label>Days<input name="days" placeholder="MW, TR, W, N/A" list="dl-days"></label>
+      <label>Start<input name="start" type="time"></label>
+      <label>End<input name="end" type="time"></label>
+      <label>Room<input name="room" list="dl-rooms" placeholder="HH1311"></label>
+      <div class="presets" id="presets" aria-label="Time presets"></div>
+      <label class="w2">Instructor<input name="instructor" list="dl-instr" placeholder="Last, First"></label>
+      <label class="w2">Note<input name="note"></label>
+      <div class="flags" id="dflags"></div>
+    </div>
+    <div class="dlgbar">
+      <div><button type="button" class="danger" id="d-del">Delete</button> <button type="button" id="d-dup">Duplicate</button></div>
+      <div><button type="button" id="d-cancel">Cancel</button> <button class="primary" id="d-ok" value="ok">Save</button></div>
+    </div>
+  </form>
+</dialog>
+<datalist id="dl-days"><option>MW</option><option>TR</option><option>MWF</option><option>M</option><option>T</option><option>W</option><option>R</option><option>F</option><option>N/A</option></datalist>
+<datalist id="dl-session"><option>Full Term</option><option>1st 8 week</option><option>2nd 8 week</option><option>1st 6 week</option><option>2nd 6 week</option><option>3rd 6 week</option><option>Mini</option></datalist>
+<datalist id="dl-rooms"></datalist>
+<datalist id="dl-instr"></datalist>
+
+<script>
+"use strict";
+// ======================================================================= constants
+const PRESETS = [
+  ["MW", 480, 555], ["MW", 570, 645], ["MW", 660, 735], ["MW", 750, 825], ["MW", 840, 915], ["MW", 930, 1005],
+  ["TR", 480, 555], ["TR", 570, 645], ["TR", 660, 735], ["TR", 750, 825], ["TR", 840, 915], ["TR", 930, 1005],
+  ["W", 1020, 1170],
+];
+const COLS = ["term", "course", "section", "title", "credits", "session", "days", "start", "end", "room", "instructor", "modality", "cap", "note"];
+const STORE = "schedule-editor-v1";
+const SEASON_ORDER = { Winter: 1, Spring: 2, Summer: 3, Fall: 4 };
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+// ======================================================================= state
+let S = {
+  sections: [], rooms: [], roomsSource: "", loads: null, loadsSource: "", plan: null, planSource: "", soft: null, softSource: "",
+  scheduleSource: "", settings: { ourDept: "", partnerDept: "Marketing", showOther: false }, log: [], term: "", view: "rooms", sort: "course",
+};
+try { const s = JSON.parse(localStorage.getItem(STORE)); if (s && Array.isArray(s.sections)) S = Object.assign(S, s); } catch (e) {}
+let undoStack = [], redoStack = [];
+const persist = () => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) { say("This browser couldn't keep a draft (storage full or blocked). Save the schedule file.", true); } };
+function say(t, err) { $("msg").textContent = t; $("msg").className = err ? "err" : ""; }
+
+// ======================================================================= helpers
+const pad2 = s => /^\d$/.test(s) ? "0" + s : s;
+const fmtT = m => { if (m == null) return ""; const h = Math.floor(m / 60), mi = m % 60; return `${(h + 11) % 12 + 1}:${String(mi).padStart(2, "0")}`; };
+const ampm = m => m < 720 ? "am" : "pm";
+const fmtRange = (a, b) => a == null ? "" : `${fmtT(a)}${ampm(a) !== ampm(b) ? " " + ampm(a) : ""} - ${fmtT(b)} ${ampm(b)}`;
+const hhmm = m => m == null ? "" : `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+const slotLabel = (d, a, b) => `${d} ${fmtRange(a, b)}`;
+function parseHHMM(v) {
+  const s = String(v ?? "").trim().toLowerCase(); if (!s) return null;
+  const m = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?$/.exec(s); if (!m) return null;
+  let h = +m[1]; const mi = +(m[2] || 0), mer = m[3] ? m[3][0] : "";
+  if (mer === "p" && h < 12) h += 12; if (mer === "a" && h === 12) h = 0;
+  return h * 60 + mi;
+}
+// "9:30 - 10:45 am", "12:30 - 1:45 pm   11:00 - 12:15 PM" (two values: first is used, flagged)
+function parseTimeframe(txt) {
+  const s = String(txt ?? "").toLowerCase().replace(/\./g, ""); const re = /(\d{1,2}):(\d{2})\s*(am|pm)?\s*-\s*(\d{1,2}):(\d{2})\s*(am|pm)?/g;
+  const all = [...s.matchAll(re)]; if (!all.length) return null;
+  const m = all[0]; let eh = +m[4] % 12; const em = +m[5], emer = m[6] || (m[3] || "");
+  if (emer === "pm") eh += 12; else if (!emer && eh < 7) eh += 12;
+  const end = eh * 60 + em;
+  const cands = [(+m[1] % 12) * 60 + +m[2], (+m[1] % 12 + 12) * 60 + +m[2]].filter(x => end - x >= 30 && end - x <= 300);
+  const start = m[3] === "am" ? (+m[1] % 12) * 60 + +m[2] : m[3] === "pm" ? (+m[1] % 12 + 12) * 60 + +m[2] : (cands.length ? Math.max(...cands) : null);
+  return { start, end, multiple: all.length > 1 };
+}
+const normDays = d => { let s = String(d ?? "").trim().toUpperCase().replace(/\s+/g, ""); if (/^(N\/?A|TBA|TBD|NONE|ONLINE|ARR)$/.test(s) || !s) return ""; return s.replace(/TH/g, "R"); };
+const dayLetters = d => new Set(String(d || "").split(""));
+const NONROOM = /^(online|n\/?a|tba|tbd|none|independent study|indsty.*|ind\.? ?study|arr|-)$/i;
+function normRoom(r) {
+  const s = String(r ?? "").trim(); if (!s || NONROOM.test(s)) return { room: "", multiple: false };
+  const parts = s.toUpperCase().replace(/HH\s+/g, "HH").split(/\s+/).filter(Boolean);
+  let room = parts[0]; if (/^\d{3,4}$/.test(room)) room = "HH" + room;
+  return { room, multiple: parts.length > 1 };
+}
+const isPhysical = s => !!s.room;
+const timed = s => !!s.days && s.start != null && s.end != null;
+const nameKey = n => {
+  const s = String(n ?? "").trim(); if (!s || isTBD(s)) return "";
+  let first, last;
+  if (s.includes(",")) { [last, first] = s.split(",").map(x => x.trim()); } else { const p = s.split(/\s+/); first = p[0]; last = p[p.length - 1]; }
+  return ((last || "") + "|" + (first || "").charAt(0)).toLowerCase();
+};
+function isTBD(n) { return !String(n ?? "").trim() || /^0$/.test(String(n).trim()) || /\b(tbd|tba|staff|to be arranged|online)\b|^tbd_/i.test(String(n)); }
+// match names across files: "Gmach, Mark" = "Mark Gmach"; "Sarker" = "Md Showaib Rahman Sarker" when the last name is unique
+function resolveKey(name) {
+  const k = nameKey(name); if (!k || !S.loads || S.loads[k]) return k;
+  const last = k.split("|")[0], c = Object.keys(S.loads).filter(x => x.split("|")[0] === last);
+  return c.length === 1 ? c[0] : k;
+}
+const lastName = n => { const s = String(n ?? "").trim(); return s.includes(",") ? s.split(",")[0].trim() : s.split(/\s+/).pop(); };
+const termKey = t => { const [s, y] = String(t).split(" "); return (+y || 0) * 10 + (SEASON_ORDER[s] || 0); };
+const seasonOf = t => String(t).split(" ")[0];
+const courseNum = c => +((/\d+/.exec(c) || [0])[0]);
+const sortSections = arr => arr.sort((a, b) => a.course.localeCompare(b.course, undefined, { numeric: true }) || String(a.section).localeCompare(String(b.section), undefined, { numeric: true }));
+const label = s => `${s.course}-${s.section}`;
+const terms = () => [...new Set(S.sections.map(s => s.term))].sort((a, b) => termKey(a) - termKey(b));
+function normTermName(t) {
+  const s = String(t ?? "").trim(); const m = /(fall|spring|summer|winter(?:im)?)\D*(\d{2,4})/i.exec(s); if (!m) return s;
+  let y = +m[2]; if (y < 100) y += 2000; let season = m[1].toLowerCase().startsWith("winter") ? "Winter" : m[1][0].toUpperCase() + m[1].slice(1).toLowerCase();
+  return `${season} ${y}`;
+}
+function sameSessionWindow(a, b) {
+  const A = String(a.session || "").toLowerCase(), B = String(b.session || "").toLowerCase();
+  if (!A || !B || A === B || /full/.test(A) || /full/.test(B)) return true;
+  return false;
+}
+const overlaps = (a, b) => a.term === b.term && timed(a) && timed(b) && sameSessionWindow(a, b)
+  && [...dayLetters(a.days)].some(d => dayLetters(b.days).has(d)) && a.start < b.end && b.start < a.end;
+
+// ======================================================================= xlsx read (no library)
+async function readXlsx(buf) {
+  const u8 = new Uint8Array(buf), dv = new DataView(buf), dec = new TextDecoder();
+  let eocd = -1; for (let i = u8.length - 22; i >= Math.max(0, u8.length - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error("not a valid .xlsx file");
+  const files = {}; let p = dv.getUint32(eocd + 16, true);
+  for (let k = 0, n = dv.getUint16(eocd + 10, true); k < n; k++) {
+    const nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true);
+    files[dec.decode(u8.subarray(p + 46, p + 46 + nl))] = { method: dv.getUint16(p + 10, true), size: dv.getUint32(p + 20, true), off: dv.getUint32(p + 42, true) };
+    p += 46 + nl + xl + cl;
+  }
+  async function get(name) {
+    const f = files[name]; if (!f) return null;
+    const start = f.off + 30 + dv.getUint16(f.off + 26, true) + dv.getUint16(f.off + 28, true), data = u8.subarray(start, start + f.size);
+    if (f.method === 0) return dec.decode(data);
+    return new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text();
+  }
+  const xml = s => new DOMParser().parseFromString(s, "application/xml");
+  const all = (node, tag) => Array.from(node.getElementsByTagNameNS("*", tag));
+  const wb = xml(await get("xl/workbook.xml")), rels = xml(await get("xl/_rels/workbook.xml.rels"));
+  const sstText = await get("xl/sharedStrings.xml");
+  const sst = sstText ? all(xml(sstText), "si").map(si => all(si, "t").map(t => t.textContent).join("")) : [];
+  const out = [];
+  for (const sh of all(wb, "sheet")) {
+    const rid = sh.getAttribute("r:id") || sh.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
+    const rel = all(rels, "Relationship").find(r => r.getAttribute("Id") === rid); if (!rel) continue;
+    const t = rel.getAttribute("Target"), path = t.startsWith("/") ? t.slice(1) : "xl/" + t.replace(/^\.\//, "");
+    const text = await get(path); if (!text) continue;
+    const rows = [];
+    for (const r of all(xml(text), "row")) {
+      const ri = +r.getAttribute("r") - 1, row = [];
+      for (const c of all(r, "c")) {
+        let ci = 0; for (const ch of c.getAttribute("r").replace(/\d+/g, "")) ci = ci * 26 + ch.charCodeAt(0) - 64; ci--;
+        const ty = c.getAttribute("t"), v = all(c, "v")[0]?.textContent ?? "";
+        row[ci] = ty === "s" ? sst[+v] : ty === "inlineStr" ? all(c, "t").map(x => x.textContent).join("") : v;
+      }
+      rows[ri] = Array.from(row, x => x == null ? "" : String(x).trim());
+    }
+    out.push({ name: sh.getAttribute("name"), rows: Array.from(rows, r => r || []) });
+  }
+  return out;
+}
+function parseCSV(text) {
+  const rows = []; let row = [], f = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true; else if (c === ",") { row.push(f); f = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(f); rows.push(row); row = []; f = ""; }
+    else f += c;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  return rows.map(r => r.map(x => x.trim()));
+}
+async function readAny(file) {
+  if (/\.xls[xm]$/i.test(file.name)) return readXlsx(await file.arrayBuffer());
+  return [{ name: file.name, rows: parseCSV((await file.text()).replace(/^﻿/, "")) }];
+}
+
+// ======================================================================= xlsx write (no library)
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = u8 => { let c = 0xffffffff; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+function zip(files) {               // files: [[name, string]] -> Blob (stored, no compression)
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  for (const [name, text] of files) {
+    const nb = enc.encode(name), data = enc.encode(text), crc = crc32(data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, 0, true);
+    h.setUint32(14, crc, true); h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, nb.length, true);
+    parts.push(h, nb, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true);
+    c.setUint32(16, crc, true); c.setUint32(20, data.length, true); c.setUint32(24, data.length, true); c.setUint16(28, nb.length, true); c.setUint32(42, off, true);
+    central.push(c, nb);
+    off += 30 + nb.length + data.length;
+  }
+  const size = central.reduce((t, x) => t + (x.byteLength ?? x.length), 0);
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, size, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...central, e], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+function xlsxBlob(sheets) {         // sheets: [{name, rows:[[...]], widths?}]
+  const x = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "");
+  const col = i => { let s = ""; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+  const used = new Set();
+  const names = sheets.map(sh => { let n = String(sh.name).replace(/[\[\]:*?\/\\]/g, " ").slice(0, 31) || "Sheet"; while (used.has(n)) n = n.slice(0, 28) + "_" + used.size; used.add(n); return n; });
+  const files = [
+    ["[Content_Types].xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>`],
+    ["_rels/.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+    ["xl/workbook.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${names.map((n, i) => `<sheet name="${x(n)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("")}</sheets></workbook>`],
+    ["xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("")}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ["xl/styles.xml", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf/></cellStyleXfs><cellXfs count="3"><xf/><xf fontId="1" applyFont="1"/><xf applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf></cellXfs></styleSheet>`],
+  ];
+  sheets.forEach((sh, i) => {
+    const widths = sh.widths || sh.rows[0].map((_, c) => Math.min(60, Math.max(8, ...sh.rows.map(r => String(r[c] ?? "").length + 2))));
+    const body = sh.rows.map((r, ri) => `<row r="${ri + 1}">${r.map((v, ci) => {
+      if (v === "" || v == null) return "";
+      const ref = col(ci) + (ri + 1), st = ri === 0 && sh.header !== false ? ' s="1"' : sh.wrap ? ' s="2"' : "";
+      return typeof v === "number" && isFinite(v) ? `<c r="${ref}"${st}><v>${v}</v></c>` : `<c r="${ref}" t="inlineStr"${st}><is><t xml:space="preserve">${x(v)}</t></is></c>`;
+    }).join("")}</row>`).join("");
+    files.push([`xl/worksheets/sheet${i + 1}.xml`, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${sh.header !== false ? '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' : ""}<cols>${widths.map((w, c) => `<col min="${c + 1}" max="${c + 1}" width="${w}" customWidth="1"/>`).join("")}</cols><sheetData>${body}</sheetData></worksheet>`]);
+  });
+  return zip(files);
+}
+function download(blob, name) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+
+// ======================================================================= importers
+const lowerRow = r => r.map(x => String(x ?? "").trim().toLowerCase());
+function detect(sheet) {
+  for (let i = 0; i < Math.min(sheet.rows.length, 6); i++) {
+    const h = lowerRow(sheet.rows[i] || []);
+    if (h.includes("room number") && h.includes("capacity")) return ["rooms", i];
+    if (h.includes("course #") && h.includes("section #")) return ["aymemo", i];
+    if (["term", "course", "section", "days", "start", "end", "room", "instructor"].every(k => h.includes(k))) return ["schedule", i];
+    if (h.includes("fall_load") && h.includes("name")) return ["loads", i];
+    if (h.includes("planned_in_person")) return ["plan", i];
+    if (h.includes("constraint type") && h.includes("applies to")) return ["soft", i];
+  }
+  return [null, -1];
+}
+const pick = (h, r, ...names) => { for (const n of names) { const i = h.indexOf(n); if (i >= 0 && r[i] != null && String(r[i]).trim() !== "") return String(r[i]).trim(); } return ""; };
+const num = v => { const n = parseFloat(String(v ?? "").replace(/[^\d.]/g, "")); return isFinite(n) && String(v ?? "").trim() !== "" && /^\s*\d/.test(String(v)) ? n : null; };
+
+function importSchedule(sheet, hi) {
+  const h = lowerRow(sheet.rows[hi]), out = [];
+  for (const r of sheet.rows.slice(hi + 1)) {
+    const course = pick(h, r, "course"); if (!course) continue;
+    const flags = [], rm = normRoom(pick(h, r, "room"));
+    if (rm.multiple) flags.push("Room cell had more than one value; used the first.");
+    let start = parseHHMM(pick(h, r, "start")), end = parseHHMM(pick(h, r, "end"));
+    const days = normDays(pick(h, r, "days"));
+    if (days && (start == null || end == null)) flags.push("Days given but start/end time missing or unreadable.");
+    out.push({ id: uid(), term: normTermName(pick(h, r, "term")), termCode: pick(h, r, "term_code", "termcode"), course: course.toUpperCase().replace(/\s+/g, " "),
+      section: pad2(pick(h, r, "section")), title: pick(h, r, "title"), credits: num(pick(h, r, "credits")), session: pick(h, r, "session") || "Full Term",
+      days, start: days ? start : null, end: days ? end : null, room: rm.room, instructor: pick(h, r, "instructor"),
+      modality: normModality(pick(h, r, "modality"), rm.room), cap: num(pick(h, r, "cap")), note: pick(h, r, "note"), flags });
+  }
+  return out;
+}
+function normModality(m, room) {
+  const s = String(m || "").trim().toLowerCase();
+  if (/online|ol\b|web/.test(s)) return "Online"; if (/^is$|independent/.test(s)) return "IS"; if (/hybrid|hyflex/.test(s)) return "Hybrid";
+  if (/f2f|face|in.?person|class/.test(s)) return "F2F";
+  return room ? "F2F" : "Online";
+}
+function importAYMemo(sheet, hi) {
+  const h = lowerRow(sheet.rows[hi]).map(x => x.replace(/\s+/g, " ")), out = [], term = normTermName(sheet.name);
+  for (const r of sheet.rows.slice(hi + 1)) {
+    let course = pick(h, r, "course #"); if (!course) continue;
+    const flags = [];
+    const ct = course.toUpperCase().split(/\s+/);
+    if (ct.length > 2) { flags.push(`Course cell "${course}" had more than one value; used "${ct.slice(0, 2).join(" ")}".`); }
+    course = ct.slice(0, 2).join(" ");
+    let sec = pick(h, r, "section #"); const st = sec.split(/\s+/);
+    if (st.length > 1) flags.push(`Section cell "${sec}" had more than one value; used "${st[0]}".`);
+    sec = pad2(st[0].replace(/\.0+$/, ""));
+    const days = normDays(pick(h, r, "days")); const tf = pick(h, r, "timeframe"); const t = days ? parseTimeframe(tf) : null;
+    if (t && t.multiple) flags.push(`Time cell "${tf}" had more than one value; used the first.`);
+    if (days && !t) flags.push(`Couldn't read the time "${tf}".`);
+    const rr = pick(h, r, "room"), rm = normRoom(rr);
+    if (rm.multiple) flags.push(`Room cell "${rr}" had more than one value; used "${rm.room}".`);
+    const ins = pick(h, r, "instructor");
+    out.push({ id: uid(), term, termCode: pick(h, r, "term"), course, section: sec, title: pick(h, r, "course title"), credits: num(pick(h, r, "credits")),
+      session: pick(h, r, "session") || "Full Term", days, start: t ? t.start : null, end: t ? t.end : null, room: rm.room,
+      instructor: /^0$|^online$/i.test(ins) ? "" : ins, modality: normModality(pick(h, r, "modality"), rm.room), cap: num(pick(h, r, "cap")),
+      note: pick(h, r, "note"), flags });
+  }
+  return out;
+}
+function importRooms(sheet, hi) {
+  const h = lowerRow(sheet.rows[hi]), out = [];
+  for (const r of sheet.rows.slice(hi + 1)) {
+    const n = pick(h, r, "room number"); if (!n) continue;
+    const { room } = normRoom(n);
+    out.push({ id: room, cap: num(pick(h, r, "capacity")), type: pick(h, r, "room type"), hyflex: pick(h, r, "hyflex"), dept: pick(h, r, "department assigned") });
+  }
+  return out;
+}
+function importLoads(sheet, hi) {
+  const h = lowerRow(sheet.rows[hi]), out = {};
+  for (const r of sheet.rows.slice(hi + 1)) {
+    const name = pick(h, r, "name"); if (!name) continue;
+    out[nameKey(name)] = { name, Fall: num(pick(h, r, "fall_load")), Spring: num(pick(h, r, "spring_load")), position: pick(h, r, "position") };
+  }
+  return out;
+}
+function importPlan(sheet, hi) {
+  const h = lowerRow(sheet.rows[hi]), out = [];
+  for (const r of sheet.rows.slice(hi + 1)) {
+    const course = pick(h, r, "course"); if (!course) continue;
+    out.push({ season: seasonOf(normTermName(pick(h, r, "term"))), term: normTermName(pick(h, r, "term")), course: course.toUpperCase(),
+      ip: num(pick(h, r, "planned_in_person")) || 0, on: num(pick(h, r, "planned_online")) || 0,
+      ipStu: num(pick(h, r, "last_in_person_students")) || 0, onStu: num(pick(h, r, "last_online_students")) || 0, basedOn: pick(h, r, "based_on_term") });
+  }
+  return out;
+}
+function importSoft(sheet, hi) {
+  const h = lowerRow(sheet.rows[hi]), out = [];
+  for (const r of sheet.rows.slice(hi + 1)) {
+    const a = pick(h, r, "applies to"); if (!a) continue;
+    out.push({ id: pick(h, r, "constraint id"), applies: a.toUpperCase().replace(/\s+/g, " "), type: pick(h, r, "constraint type"),
+      target: pick(h, r, "related course or target"), priority: pick(h, r, "priority") });
+  }
+  return out;
+}
+
+// ======================================================================= rooms & groups
+function roomGroup(room) {
+  if (!room) return 3;
+  const d = (room.dept || "").toLowerCase(), our = (S.settings.ourDept || "").toLowerCase(), subj = subjectCode().toLowerCase(), part = (S.settings.partnerDept || "").toLowerCase();
+  if ((our && d === our) || (subj && d.includes(subj))) return 1;
+  if (part && d.includes(part)) return 2;
+  return 3;
+}
+function subjectCode() {
+  const c = {}; for (const s of S.sections) { const k = s.course.split(" ")[0]; c[k] = (c[k] || 0) + 1; }
+  return Object.entries(c).sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+}
+const roomById = id => S.rooms.find(r => r.id === id);
+function guessOurDept() {
+  if (S.settings.ourDept || !S.rooms.length) return;
+  const used = {}; for (const s of S.sections) { const r = roomById(s.room); if (r && r.dept) used[r.dept] = (used[r.dept] || 0) + 1; }
+  const best = Object.entries(used).filter(([d]) => !/\//.test(d)).sort((a, b) => b[1] - a[1])[0];
+  if (best) S.settings.ourDept = best[0];
+}
+
+// ======================================================================= checks
+function check(term) {
+  const secs = S.sections.filter(s => s.term === term), issues = [], status = {};
+  const mark = (ids, lvl) => ids.forEach(id => { if (lvl === "e" || !status[id]) status[id] = lvl === "h" ? status[id] : lvl; });
+  const add = (lvl, msg, ids) => { issues.push({ lvl, msg, ids }); mark(ids, lvl); };
+  // import flags
+  for (const s of secs) for (const f of s.flags || []) add("w", `${label(s)}: ${f}`, [s.id]);
+  // room & instructor clashes
+  for (let i = 0; i < secs.length; i++) for (let j = i + 1; j < secs.length; j++) {
+    const a = secs[i], b = secs[j]; if (!overlaps(a, b)) continue;
+    if (a.room && a.room === b.room) add("e", `Room clash in ${a.room}: ${label(a)} and ${label(b)} (${a.days} ${fmtRange(a.start, a.end)} / ${b.days} ${fmtRange(b.start, b.end)})`, [a.id, b.id]);
+    const ka = resolveKey(a.instructor); if (ka && ka === resolveKey(b.instructor)) add("e", `${a.instructor} teaches ${label(a)} and ${label(b)} at the same time`, [a.id, b.id]);
+  }
+  for (const s of secs) {
+    const r = roomById(s.room);
+    if (s.room && S.rooms.length && !r) add("w", `${label(s)}: room ${s.room} is not in the room list`, [s.id]);
+    if (r && r.cap != null && s.cap != null && s.cap > r.cap) add("e", `${label(s)}: cap ${s.cap} is more than ${s.room} holds (${r.cap})`, [s.id]);
+    if ((s.modality === "F2F" || s.modality === "Hybrid") && !s.room) add("e", `${label(s)}: in-person section without a room`, [s.id]);
+    if ((s.modality === "F2F" || s.modality === "Hybrid") && !timed(s)) add("e", `${label(s)}: in-person section without days/time`, [s.id]);
+    if (s.days && s.start != null && s.end != null && s.end <= s.start) add("e", `${label(s)}: end time is before start time`, [s.id]);
+    if (isTBD(s.instructor) && s.modality !== "IS") add("w", `${label(s)}: no instructor yet (${s.instructor || "blank"})`, [s.id]);
+    if (r && roomGroup(r) === 3) add("h", `${label(s)}: ${s.room} belongs to ${r.dept || "another department"}; ask first`, [s.id]);
+  }
+  // loads
+  const season = seasonOf(term), byI = {};
+  for (const s of secs) { const k = resolveKey(s.instructor); if (!k) continue; (byI[k] = byI[k] || { name: s.instructor, list: [] }).list.push(s); }
+  if (S.loads && (season === "Fall" || season === "Spring")) {
+    for (const [k, L] of Object.entries(S.loads)) {
+      const want = L[season]; if (want == null) continue;
+      const have = (byI[k]?.list || []).filter(s => s.modality !== "IS");
+      const n = `${have.length} section${have.length === 1 ? "" : "s"}`;
+      if (have.length > want) add("w", `${L.name}: ${n}, load is ${want} (over by ${have.length - want})`, have.map(s => s.id));
+      else if (have.length < want) add("w", `${L.name}: ${n}, load is ${want} (${want - have.length} to assign)`, have.map(s => s.id));
+    }
+    for (const [k, I] of Object.entries(byI)) if (!S.loads[k]) add("h", `${I.name} is not in the teaching loads file`, I.list.map(s => s.id));
+  }
+  // every instructor with at least 1 face-to-face section
+  for (const I of Object.values(byI)) if (I.list.length && !I.list.some(s => s.modality === "F2F" || s.modality === "Hybrid"))
+    add("w", `${I.name} has no face-to-face section this term`, I.list.map(s => s.id));
+  // section plan + expected students
+  const exp = {};
+  if (S.plan) {
+    const rows = S.plan.filter(p => p.season === season);
+    for (const p of rows) {
+      const list = secs.filter(s => s.course === p.course), ip = list.filter(s => s.modality === "F2F" || s.modality === "Hybrid"), on = list.filter(s => s.modality === "Online");
+      if (ip.length !== p.ip) add("w", `${p.course}: ${ip.length} in-person section${ip.length === 1 ? "" : "s"}, plan says ${p.ip}`, ip.map(s => s.id));
+      if (on.length !== p.on) add("w", `${p.course}: ${on.length} online section${on.length === 1 ? "" : "s"}, plan says ${p.on}`, on.map(s => s.id));
+      const e1 = ip.length ? p.ipStu / ip.length : null, e2 = on.length ? p.onStu / on.length : null;
+      ip.forEach(s => exp[s.id] = e1); on.forEach(s => exp[s.id] = e2);
+      if (e1 != null && Math.round(e1) > 50) add("w", `${p.course}: about ${Math.round(e1)} students per in-person section (${p.ipStu} in ${p.basedOn || "base term"})`, ip.map(s => s.id));
+      if (e2 != null && Math.round(e2) > 50) add("w", `${p.course}: about ${Math.round(e2)} students per online section (${p.onStu} in ${p.basedOn || "base term"})`, on.map(s => s.id));
+      if (!ip.length && p.ipStu) add("w", `${p.course}: ${p.ipStu} in-person students last time, no in-person section`, []);
+    }
+    const planned = new Set(rows.map(p => p.course));
+    for (const c of new Set(secs.map(s => s.course))) if (!planned.has(c) && rows.length) add("h", `${c} is scheduled but not in the section plan`, secs.filter(s => s.course === c).map(s => s.id));
+  }
+  // easy soft rules (hints)
+  if (S.soft) {
+    const D = { monday: "M", tuesday: "T", wednesday: "W", thursday: "R", friday: "F", saturday: "S", sunday: "U" };
+    for (const c of S.soft) {
+      const A = secs.filter(s => s.course === c.applies && timed(s)); if (!A.length) continue;
+      const tag = `${c.id ? c.id + " " : ""}(${c.priority || "soft"})`;
+      if (/overlap/i.test(c.type)) {
+        const B = secs.filter(s => s.course === c.target.toUpperCase().replace(/\s+/g, " ") && timed(s));
+        for (const a of A) for (const b of B) if (overlaps(a, b)) add("h", `${tag} ${label(a)} overlaps ${label(b)}`, [a.id, b.id]);
+      } else if (/avoid day/i.test(c.type)) {
+        const L = D[c.target.trim().toLowerCase()] || c.target.trim().toUpperCase().charAt(0);
+        for (const a of A) if (dayLetters(a.days).has(L)) add("h", `${tag} ${label(a)} meets on ${c.target}`, [a.id]);
+      } else if (/latest start/i.test(c.type)) {
+        const t = parseHHMM(c.target); if (t != null) for (const a of A) if (a.start > t) add("h", `${tag} ${label(a)} starts ${fmtT(a.start)} ${ampm(a.start)}, after ${c.target}`, [a.id]);
+      } else if (/earliest start/i.test(c.type)) {
+        const t = parseHHMM(c.target); if (t != null) for (const a of A) if (a.start < t) add("h", `${tag} ${label(a)} starts ${fmtT(a.start)} ${ampm(a.start)}, before ${c.target}`, [a.id]);
+      }
+    }
+  }
+  return { issues, status, exp };
+}
+
+// ======================================================================= edits, undo, log
+function describe(a, b) {
+  const ch = [];
+  const slot = s => timed(s) ? `${s.days} ${fmtRange(s.start, s.end)}` : "no time";
+  if (slot(a) !== slot(b)) ch.push(`time ${slot(a)} → ${slot(b)}`);
+  if ((a.room || "") !== (b.room || "")) ch.push(`room ${a.room || "none"} → ${b.room || "none"}`);
+  for (const [f, n] of [["instructor", "instructor"], ["modality", "modality"], ["cap", "cap"], ["section", "section"], ["course", "course"], ["title", "title"], ["session", "session"], ["credits", "credits"], ["note", "note"], ["term", "term"]])
+    if (String(a[f] ?? "") !== String(b[f] ?? "")) ch.push(`${n} ${a[f] || "–"} → ${b[f] || "–"}`);
+  return ch.join("; ");
+}
+function apply(mutator, what) {
+  const before = JSON.stringify(S.sections), map = new Map(JSON.parse(before).map(s => [s.id, s]));
+  undoStack.push({ sections: before, log: S.log.length }); if (undoStack.length > 200) undoStack.shift(); redoStack = [];
+  mutator();
+  const now = new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }), lines = [];
+  const after = new Map(S.sections.map(s => [s.id, s]));
+  for (const [id, b] of after) { const a = map.get(id); if (!a) lines.push(`Added ${label(b)} (${b.term})`); else { const d = describe(a, b); if (d) lines.push(`${label(b)} (${b.term}): ${d}`); } }
+  for (const [id, a] of map) if (!after.has(id)) lines.push(`Deleted ${label(a)} (${a.term})`);
+  if (!lines.length) { undoStack.pop(); return; }
+  for (const l of lines) S.log.push({ t: now, what: l });
+  say(lines.join("\n"));
+  render();
+}
+function undo() {
+  const u = undoStack.pop(); if (!u) return;
+  redoStack.push({ sections: JSON.stringify(S.sections), log: S.log.slice(u.log) });
+  S.sections = JSON.parse(u.sections); const removed = S.log.splice(u.log);
+  say("Undid: " + removed.map(x => x.what).join("; ")); render();
+}
+function redo() {
+  const r = redoStack.pop(); if (!r) return;
+  undoStack.push({ sections: JSON.stringify(S.sections), log: S.log.length });
+  S.sections = JSON.parse(r.sections); S.log.push(...r.log);
+  say("Redid: " + r.log.map(x => x.what).join("; ")); render();
+}
+const byId = id => S.sections.find(s => s.id === id);
+const slotOf = s => ({ days: s.days, start: s.start, end: s.end });
+const setSlot = (s, v) => { s.days = v.days; s.start = v.start; s.end = v.end; };
+
+// drop in the room grid: move, or swap with the one section already there
+function dropRoom(id, room, slot) {
+  apply(() => {
+    const c = byId(id), old = { room: c.room, ...slotOf(c) };
+    const occ = S.sections.filter(s => s.id !== id && s.term === c.term && s.room === room && s.days === slot.days && s.start === slot.start && s.end === slot.end);
+    c.room = room; setSlot(c, slot); if (c.modality === "Online" || c.modality === "IS") c.modality = "F2F";
+    if (occ.length === 1) { const o = occ[0]; o.room = old.room; setSlot(o, old); }
+  });
+}
+// drop in the instructor grid: change time (and instructor if another row); swap with that instructor's section there
+function dropInstr(id, instructor, slot) {
+  apply(() => {
+    const c = byId(id), old = { instructor: c.instructor, ...slotOf(c) }, k = resolveKey(instructor);
+    const occ = S.sections.filter(s => s.id !== id && s.term === c.term && resolveKey(s.instructor) === k && s.days === slot.days && s.start === slot.start && s.end === slot.end);
+    setSlot(c, slot); c.instructor = instructor;
+    if (occ.length === 1) { const o = occ[0]; setSlot(o, old); o.instructor = old.instructor; }
+  });
+}
+function dropTray(id) {
+  apply(() => { const c = byId(id); setSlot(c, { days: "", start: null, end: null }); c.room = ""; });
+}
+
+// ======================================================================= rendering
+const state = { flashId: null, instrNames: new Map() };
+function columnsFor(term) {
+  const cols = PRESETS.map(([d, a, b]) => ({ days: d, start: a, end: b, preset: true }));
+  const seen = new Set(cols.map(c => `${c.days}|${c.start}|${c.end}`));
+  const extra = [];
+  for (const s of S.sections) if (s.term === term && timed(s)) { const k = `${s.days}|${s.start}|${s.end}`; if (!seen.has(k)) { seen.add(k); extra.push({ days: s.days, start: s.start, end: s.end }); } }
+  extra.sort((a, b) => a.days.localeCompare(b.days) || a.start - b.start);
+  return cols.concat(extra);
+}
+function cardHtml(s, R) {
+  const st = R.status[s.id], e = R.exp[s.id], r = roomById(s.room);
+  const ex = e != null ? `<span class="exp ${Math.round(e) <= 40 ? "good" : Math.round(e) <= 50 ? "mid" : "crit"}" title="Expected students per section (section plan)">${Math.round(e)}</span>` : "";
+  const capTxt = s.cap != null ? `cap ${s.cap}${r && r.cap != null ? "/" + r.cap : ""}` : (r && r.cap != null ? `room ${r.cap}` : "");
+  return `<div class="card ${s.modality === "Online" ? "online" : ""} ${st === "e" ? "err" : st === "w" ? "warn" : ""} ${state.flashId === s.id ? "flash" : ""}" draggable="true" data-id="${s.id}"
+    title="${esc(label(s))} ${esc(s.title)}\n${esc(s.instructor || "no instructor")}\n${timed(s) ? esc(s.days + " " + fmtRange(s.start, s.end)) : "no time"} · ${esc(s.room || s.modality)}\nClick to edit, drag to move">
+    ${ex}<b>${esc(s.course.split(" ").pop())}-${esc(s.section)}</b>
+    <span class="who">${esc(lastName(s.instructor) || "TBD")}</span><span class="meta">${esc(capTxt)}${s.session && !/full/i.test(s.session) ? " · " + esc(s.session) : ""}</span></div>`;
+}
+function gridHtml(rowsDef, cols, cellSecs, R, kind) {
+  const head = `<tr><th class="rowh corner">${kind === "room" ? "Room" : "Instructor"}</th>${cols.map(c => `<th class="${c.preset ? "" : "extra"}">${esc(c.days)}<small>${esc(fmtRange(c.start, c.end))}</small></th>`).join("")}</tr>`;
+  let body = "";
+  for (const row of rowsDef) {
+    if (row.groupHead) { body += `<tr class="grp-head"><th colspan="${cols.length + 1}">${row.groupHead}</th></tr>`; continue; }
+    body += `<tr class="${row.cls || ""}"><th class="rowh" title="${esc(row.tip || "")}">${row.html}</th>${cols.map(c => {
+      const list = cellSecs(row.key, c);
+      return `<td class="cell ${list.length ? "" : "free"}" data-row="${esc(row.key)}" data-slot="${esc(c.days)}|${c.start}|${c.end}">${list.map(s => cardHtml(s, R)).join("")}</td>`;
+    }).join("")}</tr>`;
+  }
+  return `<div class="panel gridwrap"><table class="grid"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+}
+function trayHtml(term, R) {
+  const list = sortSections(S.sections.filter(s => s.term === term && !timed(s)));
+  return `<section class="panel tray" id="tray" aria-label="No time: online, independent study, TBA"><h3>No day/time (${list.length}): online, independent study, TBA. Drag a card here to remove its time and room.</h3>
+    <div class="cards">${list.map(s => cardHtml(s, R)).join("") || '<span class="muted">Empty</span>'}</div></section>`;
+}
+function renderRooms(term, R) {
+  const cols = columnsFor(term), usedRooms = new Set(S.sections.filter(s => s.term === term && s.room).map(s => s.room));
+  const rooms = S.rooms.length ? S.rooms.slice() : [...usedRooms].map(id => ({ id, cap: null, dept: "" }));
+  for (const id of usedRooms) if (!rooms.some(r => r.id === id)) rooms.push({ id, cap: null, dept: "", unknown: true });
+  const groups = { 1: [], 2: [], 3: [] };
+  for (const r of rooms) groups[r.unknown ? 3 : roomGroup(r)].push(r);
+  for (const g of Object.values(groups)) g.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+  const rowsDef = [], names = { 1: `Ours (${esc(S.settings.ourDept || subjectCode() || "set below")})`, 2: `${esc(S.settings.partnerDept || "Partner")} (shared assistant)`, 3: "Other rooms: ask that department first" };
+  for (const g of [1, 2, 3]) {
+    let list = groups[g]; if (g === 3 && !S.settings.showOther) list = list.filter(r => usedRooms.has(r.id));
+    if (!list.length && g === 3 && !S.settings.showOther) { rowsDef.push({ groupHead: `${names[3]} · ${groups[3].length} hidden (tick “Show all other rooms”)` }); continue; }
+    if (!list.length) continue;
+    rowsDef.push({ groupHead: names[g] + (g === 3 && !S.settings.showOther ? ` · showing only rooms in use (${groups[3].length - list.length} hidden)` : "") });
+    for (const r of list) rowsDef.push({ key: r.id, cls: "g" + g, tip: `${r.dept || "no department"}${r.hyflex ? " · Hyflex: " + r.hyflex : ""}${r.unknown ? " · NOT in the room list" : ""}`,
+      html: `${esc(r.id)}${r.unknown ? ' <span style="color:var(--err)">?</span>' : ""}<small>${r.cap != null ? r.cap + " seats" : "capacity ?"}${r.type ? " · " + esc(r.type) : ""}</small>` });
+  }
+  const secs = S.sections.filter(s => s.term === term && timed(s));
+  const cellSecs = (room, c) => secs.filter(s => s.room === room && s.days === c.days && s.start === c.start && s.end === c.end);
+  const timedNoRoom = sortSections(secs.filter(s => !s.room));
+  const deptOpts = [...new Set(S.rooms.map(r => r.dept).filter(Boolean))].sort();
+  return `<div class="gridopts">
+      <label><input type="checkbox" id="o-other" ${S.settings.showOther ? "checked" : ""}> Show all other rooms</label>
+      ${S.rooms.length ? `<label>Our department <select id="o-our"><option value="">–</option>${deptOpts.map(d => `<option ${d === S.settings.ourDept ? "selected" : ""}>${esc(d)}</option>`).join("")}</select></label>
+      <label>Partner <select id="o-part"><option value="">–</option>${deptOpts.map(d => `<option ${d === S.settings.partnerDept ? "selected" : ""}>${esc(d)}</option>`).join("")}</select></label>` : `<span style="color:var(--warn)">Load hyland_classrooms.xlsx to see all rooms and capacities.</span>`}
+      <span class="legend">Drag a card to a free cell to move it, onto another card to swap. Columns with a grey header are non-standard times.</span></div>
+    ${gridHtml(rowsDef, cols, cellSecs, R, "room")}
+    ${timedNoRoom.length ? `<section class="panel tray"><h3 style="color:var(--err)">Has a time but no room (${timedNoRoom.length}): drag into a room row</h3><div class="cards">${timedNoRoom.map(s => cardHtml(s, R)).join("")}</div></section>` : ""}
+    ${trayHtml(term, R)}`;
+}
+function renderInstructors(term, R) {
+  const cols = columnsFor(term), secs = S.sections.filter(s => s.term === term);
+  const people = new Map();
+  for (const s of secs) { const k = resolveKey(s.instructor) || "tbd:" + (s.instructor || ""); if (!people.has(k)) people.set(k, { key: k, name: s.instructor || "(no instructor)", list: [] }); people.get(k).list.push(s); }
+  if (S.loads) for (const [k, L] of Object.entries(S.loads)) if (!people.has(k)) people.set(k, { key: k, name: L.name, list: [] });
+  const season = seasonOf(term);
+  const rowsDef = [...people.values()].sort((a, b) => lastName(a.name).localeCompare(lastName(b.name))).map(p => {
+    const L = S.loads && S.loads[p.key], n = p.list.filter(s => s.modality !== "IS").length, want = L ? L[season] : null;
+    const col = want == null ? "var(--muted)" : n === want ? "var(--ok)" : "var(--warn)";
+    state.instrNames.set(p.key, p.key.startsWith("tbd:") ? p.key.slice(4) : p.name);
+    return { key: p.key, html: `${esc(p.name)}<small style="color:${col}">${n} section${n === 1 ? "" : "s"}${want != null ? ` / load ${want}` : ""}</small>` };
+  });
+  const rowOf = s => resolveKey(s.instructor) || "tbd:" + (s.instructor || "");
+  const cellSecs = (key, c) => secs.filter(s => rowOf(s) === key && timed(s) && s.days === c.days && s.start === c.start && s.end === c.end);
+  return `<div class="gridopts"><span class="legend">Drag within a row to change the time; to another row to reassign it (swaps with a card already there). Rooms don't change here.</span></div>
+    ${gridHtml(rowsDef, cols, cellSecs, R, "instr")}${trayHtml(term, R)}`;
+}
+function renderTable(term, R) {
+  const list = S.sections.filter(s => s.term === term);
+  const key = { course: s => s.course + " " + s.section.padStart(4, "0"), time: s => (timed(s) ? s.days + String(s.start).padStart(5, "0") : "~"), room: s => s.room || "~", instructor: s => lastName(s.instructor) || "~" }[S.sort] || (s => s.course);
+  list.sort((a, b) => String(key(a)).localeCompare(String(key(b)), undefined, { numeric: true }));
+  return `<div class="panel tbl"><table class="list"><thead><tr><th data-sort="course">Course ▾</th><th>Sec</th><th>Title</th><th>Mode</th><th data-sort="time">Days / time ▾</th><th data-sort="room">Room ▾</th><th>Cap</th><th data-sort="instructor">Instructor ▾</th><th>Session</th><th>Exp.</th><th>Note</th></tr></thead><tbody>
+    ${list.map(s => { const r = roomById(s.room), e = R.exp[s.id];
+      return `<tr data-id="${s.id}" class="${R.status[s.id] === "e" ? "err" : R.status[s.id] === "w" ? "warn" : ""}"><td>${esc(s.course)}</td><td>${esc(s.section)}</td><td>${esc(s.title)}</td><td>${esc(s.modality)}</td>
+        <td>${timed(s) ? esc(s.days + " " + fmtRange(s.start, s.end)) : '<span style="color:var(--faint)">–</span>'}</td><td>${esc(s.room || "–")}</td>
+        <td>${s.cap ?? ""}${r && r.cap != null ? `<span style="color:var(--faint)">/${r.cap}</span>` : ""}</td><td>${esc(s.instructor || "–")}</td><td>${esc(s.session)}</td>
+        <td>${e != null ? Math.round(e) : ""}</td><td>${esc(s.note)}</td></tr>`; }).join("")}
+    </tbody></table></div><p style="color:var(--muted);font-size:12.5px">Click a row to edit it. ${list.length} sections.</p>`;
+}
+function renderLog() {
+  return `<div class="panel log"><p style="margin:0 0 6px;color:var(--muted)">Every change since the schedule was loaded (${S.log.length}). It goes into “Export for AI audit”.</p>
+    <ol>${S.log.map(l => `<li><time>${esc(l.t)}</time>${esc(l.what)}</li>`).reverse().join("") || "<li>No changes yet.</li>"}</ol></div>`;
+}
+function renderIssues(term, R) {
+  const g = { e: [], w: [], h: [] }; R.issues.forEach(i => g[i.lvl].push(i));
+  const block = (k, title) => g[k].length ? `<h3 class="${k}">${title} (${g[k].length})</h3>${g[k].map(i => `<button class="issue ${k}" data-ids="${i.ids.join(",")}">${esc(i.msg)}</button>`).join("")}` : "";
+  $("issues").innerHTML = `<h2>Checks <small style="font-weight:400;color:var(--muted)">${esc(term)}</small></h2>
+    ${!g.e.length && !g.w.length ? '<p class="none">✓ No errors or warnings.</p>' : ""}
+    ${block("e", "Errors")}${block("w", "Warnings")}${block("h", "Hints (soft rules, rooms to ask for)")}
+    <p style="color:var(--faint);font-size:11.5px;margin-top:12px">Hard rules are checked live. Survey preferences and most soft rules are for the AI audit.</p>`;
+}
+function renderChips() {
+  const c = (ok, text, tip) => `<span class="chip ${ok ? "ok" : "missing"}" title="${esc(tip || "")}">${ok ? "✓" : "○"} ${esc(text)}</span>`;
+  $("chips").innerHTML = [
+    c(S.sections.length, S.sections.length ? `Schedule: ${S.sections.length} sections` : "Schedule", S.scheduleSource),
+    c(S.rooms.length, S.rooms.length ? `Rooms: ${S.rooms.length}` : "Rooms (hyland_classrooms.xlsx)", S.roomsSource),
+    c(S.loads, "Teaching loads", S.loadsSource), c(S.plan, "Section plan", S.planSource), c(S.soft, "Soft constraints", S.softSource),
+  ].join("");
+}
+function render() {
+  persist(); renderChips();
+  $("b-undo").disabled = !undoStack.length; $("b-redo").disabled = !redoStack.length;
+  const T = terms();
+  if (!T.includes(S.term)) S.term = T[T.length - 1] || "";
+  const results = Object.fromEntries(T.map(t => [t, check(t)]));
+  $("termtabs").innerHTML = T.map(t => { const r = results[t], e = r.issues.filter(i => i.lvl === "e").length, w = r.issues.filter(i => i.lvl === "w").length;
+    return `<button data-term="${esc(t)}" aria-selected="${t === S.term}">${esc(t)} <span style="font-weight:400;color:var(--faint)">${S.sections.filter(s => s.term === t).length}</span>${e ? `<span class="count e">${e}</span>` : ""}${w ? `<span class="count w">${w}</span>` : ""}</button>`; }).join("");
+  $("viewtabs").innerHTML = [["rooms", "Room grid"], ["instr", "Instructor grid"], ["table", "Table"], ["log", `Changes (${S.log.length})`]]
+    .map(([k, n]) => `<button data-view="${k}" aria-selected="${S.view === k}">${n}</button>`).join("");
+  if (!S.sections.length) {
+    $("view").innerHTML = `<div class="panel empty"><b>Start by opening your files</b> (Open files…, several at once is fine):<ol>
+      <li>the schedule: the AI draft, a saved schedule file, or an AY Memo workbook (every term sheet is read)</li>
+      <li><b>hyland_classrooms.xlsx</b> (rooms and capacities)</li><li>teaching_loads_….csv, section_plan_….csv, soft_constraints.csv (optional, for more checks)</li></ol>
+      <p>Nothing is uploaded. Your work is kept in this browser as a draft; use “Save schedule” to keep a file.</p></div>`;
+    $("issues").innerHTML = ""; return;
+  }
+  const R = results[S.term];
+  $("view").innerHTML = S.view === "rooms" ? renderRooms(S.term, R) : S.view === "instr" ? renderInstructors(S.term, R) : S.view === "table" ? renderTable(S.term, R) : renderLog();
+  renderIssues(S.term, R);
+  $("dl-rooms").innerHTML = S.rooms.map(r => `<option value="${esc(r.id)}">${r.cap ?? "?"} seats · ${esc(r.dept)}</option>`).join("");
+  $("dl-instr").innerHTML = [...new Set(S.sections.map(s => s.instructor).filter(Boolean).concat(S.loads ? Object.values(S.loads).map(l => l.name) : []))].sort().map(n => `<option value="${esc(n)}">`).join("");
+  if (state.flashId) { const el = document.querySelector(`.card[data-id="${state.flashId}"]`); el && el.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" }); state.flashId = null; }
+}
+
+// ======================================================================= events: drag & drop
+let dragId = null;
+document.addEventListener("dragstart", e => { const c = e.target.closest?.(".card"); if (!c) return; dragId = c.dataset.id; c.classList.add("dragging"); e.dataTransfer.setData("text/plain", dragId); e.dataTransfer.effectAllowed = "move"; });
+document.addEventListener("dragend", () => { dragId = null; document.querySelectorAll(".dragging,.over").forEach(x => x.classList.remove("dragging", "over")); });
+document.addEventListener("dragover", e => { const t = e.target.closest?.("td.cell, #tray, .tray"); if (!t || !dragId) return; e.preventDefault(); document.querySelectorAll(".over").forEach(x => x !== t && x.classList.remove("over")); t.classList.add("over"); });
+document.addEventListener("drop", e => {
+  const id = dragId || e.dataTransfer.getData("text/plain"); const cell = e.target.closest?.("td.cell"), tray = e.target.closest?.("#tray");
+  document.querySelectorAll(".over").forEach(x => x.classList.remove("over")); if (!id) return;
+  if (cell) {
+    e.preventDefault(); const [days, a, b] = cell.dataset.slot.split("|"), slot = { days, start: +a, end: +b };
+    if (S.view === "rooms") dropRoom(id, cell.dataset.row, slot);
+    else { const k = cell.dataset.row, cur = byId(id), same = (resolveKey(cur.instructor) || "tbd:" + (cur.instructor || "")) === k;
+      dropInstr(id, same ? cur.instructor : (state.instrNames.get(k) ?? ""), slot); }
+  } else if (tray) { e.preventDefault(); dropTray(id); }
+});
+
+// ======================================================================= events: clicks
+document.addEventListener("click", e => {
+  const card = e.target.closest(".card"); if (card) { openDialog(byId(card.dataset.id)); return; }
+  const tr = e.target.closest("table.list tbody tr[data-id]"); if (tr) { openDialog(byId(tr.dataset.id)); return; }
+  const th = e.target.closest("table.list th[data-sort]"); if (th) { S.sort = th.dataset.sort; render(); return; }
+  const tt = e.target.closest("#termtabs [data-term]"); if (tt) { S.term = tt.dataset.term; render(); return; }
+  const vt = e.target.closest("#viewtabs [data-view]"); if (vt) { S.view = vt.dataset.view; render(); return; }
+  const is = e.target.closest(".issue"); if (is) {
+    const id = is.dataset.ids.split(",").filter(Boolean)[0]; if (!id) return;
+    const s = byId(id); if (S.view !== "rooms" && S.view !== "instr") S.view = s.room || !timed(s) ? "rooms" : "instr";
+    state.flashId = id; render();
+  }
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "o-other") { S.settings.showOther = e.target.checked; render(); }
+  if (e.target.id === "o-our") { S.settings.ourDept = e.target.value; render(); }
+  if (e.target.id === "o-part") { S.settings.partnerDept = e.target.value; render(); }
+});
+document.addEventListener("keydown", e => {
+  if ($("dlg").open) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+  if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "y" || (e.key.toLowerCase() === "z" && e.shiftKey))) { e.preventDefault(); redo(); }
+});
+$("b-undo").onclick = undo; $("b-redo").onclick = redo;
+
+// ======================================================================= dialog
+let editing = null;
+function openDialog(s, isNew) {
+  editing = { id: s ? s.id : null, isNew: !!isNew };
+  const f = $("dform"), v = s || { term: S.term, course: subjectCode() ? subjectCode() + " " : "", section: "", title: "", credits: 3, session: "Full Term", modality: "F2F", cap: null, days: "", start: null, end: null, room: "", instructor: "", note: "", flags: [] };
+  f.term.innerHTML = [...new Set(terms().concat(S.term ? [S.term] : []))].map(t => `<option ${t === v.term ? "selected" : ""}>${esc(t)}</option>`).join("");
+  for (const k of ["course", "section", "title", "session", "room", "instructor", "note", "days"]) f[k].value = v[k] ?? "";
+  f.credits.value = v.credits ?? ""; f.cap.value = v.cap ?? ""; f.modality.value = v.modality || "F2F";
+  f.start.value = hhmm(v.start); f.end.value = hhmm(v.end);
+  $("presets").innerHTML = PRESETS.map(([d, a, b]) => `<button type="button" data-p="${d}|${a}|${b}">${d} ${fmtRange(a, b)}</button>`).join("") + `<button type="button" data-p="||">No time</button>`;
+  $("dflags").textContent = (v.flags || []).length ? "Import notes: " + v.flags.join(" ") + " (saving clears these notes)" : "";
+  $("dlg-title").textContent = s && !isNew ? `${label(s)} · ${s.term}` : "New section";
+  $("d-del").hidden = $("d-dup").hidden = !s || isNew;
+  $("dlg").showModal();
+}
+$("presets").addEventListener("click", e => { const b = e.target.closest("[data-p]"); if (!b) return; const [d, a, c] = b.dataset.p.split("|"), f = $("dform"); f.days.value = d; f.start.value = hhmm(a === "" ? null : +a); f.end.value = hhmm(c === "" ? null : +c); });
+$("d-cancel").onclick = () => $("dlg").close();
+$("dform").addEventListener("submit", e => {
+  e.preventDefault(); const f = $("dform");
+  const vals = { term: f.term.value, course: f.course.value.trim().toUpperCase().replace(/\s+/g, " "), section: pad2(f.section.value.trim()), title: f.title.value.trim(),
+    credits: num(f.credits.value), session: f.session.value.trim() || "Full Term", modality: f.modality.value, cap: num(f.cap.value), days: normDays(f.days.value),
+    start: parseHHMM(f.start.value), end: parseHHMM(f.end.value), room: normRoom(f.room.value).room, instructor: f.instructor.value.trim(), note: f.note.value.trim(), flags: [] };
+  if (!vals.days) { vals.start = vals.end = null; }
+  if (!vals.course) { alert("Course is required."); return; }
+  $("dlg").close();
+  apply(() => { if (editing.isNew || !editing.id) S.sections.push({ id: uid(), termCode: "", ...vals }); else Object.assign(byId(editing.id), vals); });
+});
+$("d-del").onclick = () => { const s = byId(editing.id); if (!confirm(`Delete ${label(s)} (${s.term})?`)) return; $("dlg").close(); apply(() => { S.sections = S.sections.filter(x => x.id !== s.id); }); };
+$("d-dup").onclick = () => {
+  const s = byId(editing.id); $("dlg").close();
+  const nums = S.sections.filter(x => x.term === s.term && x.course === s.course).map(x => parseInt(x.section) || 0);
+  const next = pad2(String((s.modality === "Online" ? Math.max(21, ...nums.filter(n => n >= 21 && n < 30)) : Math.max(0, ...nums.filter(n => n < 21))) + 1));
+  apply(() => S.sections.push({ ...JSON.parse(JSON.stringify(s)), id: uid(), section: next, days: "", start: null, end: null, room: "", flags: [] }));
+};
+$("b-add").onclick = () => openDialog(null, true);
+
+// ======================================================================= files
+const pickFiles = (mode) => { $("files").dataset.mode = mode; $("files").click(); };
+$("b-open").onclick = () => pickFiles("any"); $("b-rooms").onclick = () => pickFiles("rooms");
+$("files").addEventListener("change", async e => {
+  const files = [...e.target.files], mode = e.target.dataset.mode, notes = []; e.target.value = "";
+  try {
+    let newSecs = null, srcNames = [];
+    for (const file of files) {
+      const sheets = await readAny(file); let used = false;
+      for (const sh of sheets) {
+        const [kind, hi] = detect(sh); if (!kind) continue;
+        if (mode === "rooms" && kind !== "rooms") continue;
+        used = true;
+        if (kind === "rooms") { S.rooms = importRooms(sh, hi); S.roomsSource = file.name; notes.push(`Rooms: ${S.rooms.length} from ${file.name}`); }
+        else if (kind === "loads") { S.loads = importLoads(sh, hi); S.loadsSource = file.name; notes.push(`Teaching loads: ${Object.keys(S.loads).length} people`); }
+        else if (kind === "plan") { S.plan = importPlan(sh, hi); S.planSource = file.name; notes.push(`Section plan: ${S.plan.length} rows`); }
+        else if (kind === "soft") { S.soft = importSoft(sh, hi); S.softSource = file.name; notes.push(`Soft constraints: ${S.soft.length}`); }
+        else {
+          const got = kind === "aymemo" ? importAYMemo(sh, hi) : importSchedule(sh, hi);
+          if (got.length) { (newSecs = newSecs || []).push(...got); srcNames.push(kind === "aymemo" ? `${file.name} [${sh.name}]` : file.name); }
+        }
+      }
+      if (!used) notes.push(`${file.name}: not recognised (see “Draft format for AI”)`);
+    }
+    if (newSecs) {
+      if (S.sections.length && !confirm(`Replace the current schedule (${S.sections.length} sections, ${S.log.length} logged changes) with ${newSecs.length} sections from ${srcNames.join(", ")}?`)) { notes.push("Schedule not replaced."); }
+      else {
+        S.sections = newSecs; S.log = []; undoStack = []; redoStack = []; S.scheduleSource = srcNames.join(", "); S.term = "";
+        const flagged = newSecs.filter(s => s.flags.length).length;
+        notes.push(`Schedule: ${newSecs.length} sections in ${terms().join(", ")}` + (flagged ? ` · ${flagged} rows need a look (import notes in the checks panel)` : ""));
+      }
+    }
+    guessOurDept();
+    say(notes.join("\n") || "Nothing recognised in those files.", !notes.length); render();
+  } catch (err) { say(String(err.message || err), true); }
+});
+
+// ======================================================================= exports
+const stamp = () => new Date().toISOString().slice(0, 10);
+const yearLabel = () => { const ys = terms().map(t => +t.split(" ")[1]).filter(Boolean); return ys.length ? `${Math.min(...ys)}-${Math.max(...ys)}` : stamp(); };
+const strictRow = s => [s.term, s.course, s.section, s.title, s.credits ?? "", s.session, s.days || "N/A", hhmm(s.start), hhmm(s.end), s.room || (s.modality === "Online" ? "Online" : ""), s.instructor, s.modality, s.cap ?? "", s.note];
+$("b-save").onclick = () => {
+  if (!S.sections.length) return say("Nothing to save yet.", true);
+  const q = v => /[",\r\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v ?? "");
+  const list = sortSections(S.sections.slice()).sort((a, b) => termKey(a.term) - termKey(b.term));
+  const csv = "﻿" + [COLS].concat(list.map(strictRow)).map(r => r.map(q).join(",")).join("\r\n") + "\r\n";
+  download(new Blob([csv], { type: "text/csv" }), `schedule_${yearLabel()}.csv`);
+  say(`Saved schedule_${yearLabel()}.csv (${list.length} sections) to Downloads. Open it here later to continue.`);
+};
+$("b-ay").onclick = () => {
+  if (!S.sections.length) return say("Nothing to export yet.", true);
+  const head = ["UG or GR", "COURSE #", "SECTION #", "COURSE TITLE", "CREDITS", "TERM", "SESSION", "Days", "Timeframe", "Room", "INSTRUCTOR", "MODALITY", "CAP", "NOTE"];
+  const sheets = terms().map(t => ({ name: t.toUpperCase(), rows: [head].concat(sortSections(S.sections.filter(s => s.term === t)).map(s => [
+    courseNum(s.course) >= 500 ? "GR" : "UG", s.course, /^\d+$/.test(s.section) ? +s.section : s.section, s.title, s.credits ?? "", s.termCode ? (+s.termCode || s.termCode) : "",
+    s.session, s.days || "N/A", timed(s) ? fmtRange(s.start, s.end) : "N/A", s.room ? s.room : (s.modality === "Online" ? "Online" : "N/A"), s.instructor, s.modality, s.cap ?? "", s.note])) }));
+  download(xlsxBlob(sheets), `AY_Memo_columns_${yearLabel()}.xlsx`);
+  say(`Exported AY_Memo_columns_${yearLabel()}.xlsx: one sheet per term, AY Memo columns.`);
+};
+$("b-audit").onclick = () => {
+  if (!S.sections.length) return say("Nothing to export yet.", true);
+  const all = terms().flatMap(t => check(t).issues.map(i => [t, { e: "Error", w: "Warning", h: "Hint" }[i.lvl], i.msg]));
+  const readme = [["Schedule audit package"], [""], [`Created ${stamp()} with the Schedule Editor. Terms: ${terms().join(", ")}.`], [""],
+    ["Sheets:"], ["- Schedule: every section (one row per section)."], ["- Changes: every change the chair made after the AI draft, in order."],
+    ["- Checks: hard-rule results the editor computed (room/instructor clashes, room capacity, loads, section plan, simple soft rules)."], [""],
+    ["Please audit this schedule against the soft constraints, the instructor survey preferences and the other files you were given."],
+    ["The hard rules in the Checks sheet are already computed; focus on preferences and soft constraints."],
+    ["For each problem: the section(s), the rule or preference, how bad it is, and one concrete fix (move to which day/time/room, or swap with which section)."],
+    ["Do not undo the chair's changes listed in the Changes sheet unless they break a hard rule; say so instead."]];
+  download(xlsxBlob([
+    { name: "README", rows: readme, header: false, widths: [130] },
+    { name: "Schedule", rows: [COLS].concat(sortSections(S.sections.slice()).sort((a, b) => termKey(a.term) - termKey(b.term)).map(strictRow)) },
+    { name: "Changes", rows: [["when", "change"]].concat(S.log.map(l => [l.t, l.what])) },
+    { name: "Checks", rows: [["term", "level", "issue"]].concat(all) },
+  ]), `schedule_audit_${yearLabel()}.xlsx`);
+  say(`Exported schedule_audit_${yearLabel()}.xlsx (${S.sections.length} sections, ${S.log.length} changes, ${all.length} check results).`);
+};
+$("b-format").onclick = () => {
+  const ex = [["Fall 2027", "FNBSLW 344", "01", "Business Finance", 3, "Full Term", "MW", "09:30", "10:45", "HH2317", "Miles, Brandon", "F2F", 45, ""],
+    ["Fall 2027", "FNBSLW 344", "22", "Business Finance", 3, "Full Term", "N/A", "", "", "Online", "Kamal, Rashiqa", "Online", 45, ""],
+    ["Fall 2027", "FNBSLW 735", "22", "Financial Valuation", 3, "1st 8 week", "W", "17:00", "19:30", "HH1311", "Li, He", "F2F", 40, "evening"]];
+  const rules = [["Rules for the schedule draft (one row per section, sheet named Schedule)"], [""],
+    ["term: 'Fall 2027', 'Spring 2028', 'Summer 2028', 'Winter 2028'."], ["course: subject + number, e.g. 'FNBSLW 344'."], ["section: '01'-'09' in person, '22'-'24' online. Text, keep the leading zero."],
+    ["days: MW, TR, MWF, M, T, W, R (Thursday), F, or N/A for online/independent study. No other values."],
+    ["start / end: 24-hour HH:MM (e.g. 09:30, 14:00). Standard blocks: 08:00-09:15, 09:30-10:45, 11:00-12:15, 12:30-13:45, 14:00-15:15, 15:30-16:45; evenings allowed (e.g. 17:00-19:30). Blank when days = N/A."],
+    ["room: 'HH' + number as in hyland_classrooms.xlsx (e.g. HH2317), or 'Online'. Never two rooms in one cell."],
+    ["instructor: 'Last, First' (e.g. 'Gmach, Mark') or 'TBD'."], ["modality: F2F, Online, IS (independent study) or Hybrid."], ["cap: a whole number."],
+    ["ONE value per cell. No 'old new' pairs, no comments inside data cells: put comments in 'note'."]];
+  download(xlsxBlob([{ name: "Schedule", rows: [COLS].concat(ex) }, { name: "Rules", rows: rules, header: false, widths: [140] }]), "schedule_draft_format.xlsx");
+  say("Saved schedule_draft_format.xlsx: give it to the AI with your instructions (the 3 example rows can be deleted).");
+};
+$("b-clear").onclick = () => {
+  if (!confirm("Clear the schedule, rooms and all loaded files from this page? (Files on disk are not touched. Save the schedule first if you need it.)")) return;
+  const keep = S.settings; S = { sections: [], rooms: [], roomsSource: "", loads: null, loadsSource: "", plan: null, planSource: "", soft: null, softSource: "", scheduleSource: "", settings: keep, log: [], term: "", view: "rooms", sort: "course" };
+  undoStack = []; redoStack = []; say("Cleared."); render();
+};
+
+render();
+</script>
+</body>
+</html>

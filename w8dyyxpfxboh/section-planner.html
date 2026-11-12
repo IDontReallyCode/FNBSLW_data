@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Section Planner</title>
+<!-- Template for build_planner_page.py. Edit this file, not "Section Planner.html". -->
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f5f9; --surface: #ffffff; --text: #1d1b22; --muted: #5f5b6b; --faint: #8b8697; --line: #e3e0ea;
+  --accent: #4b2e83; --accent-soft: #ece6f6; --good: #0ca30c; --warnc: #fab219; --crit: #d03b3b; --warn: #b26a00;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #141317; --surface: #1d1b22; --text: #ece9f2; --muted: #a7a1b4; --faint: #7d7889; --line: #34303e;
+    --accent: #b9a3e8; --accent-soft: #2c2540; --warn: #f0b860;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #141317; --surface: #1d1b22; --text: #ece9f2; --muted: #a7a1b4; --faint: #7d7889; --line: #34303e;
+  --accent: #b9a3e8; --accent-soft: #2c2540; --warn: #f0b860;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 16px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+h1 { margin: 0; font-size: 22px; color: var(--accent); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: end; padding: 10px 12px; margin: 12px 0; }
+.ctl { display: flex; flex-direction: column; gap: 3px; }
+.ctl > span { font-size: 12px; color: var(--muted); font-weight: 600; }
+.ctl .row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+input, select, button { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 4px 7px; }
+input[type=number] { width: 3.6em; text-align: right; }
+input.year { width: 7em; }
+button { cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+nav { display: flex; gap: 2px; border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+nav button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: none; padding: 8px 14px; color: var(--muted); font-weight: 600; }
+nav button[aria-selected=true] { color: var(--accent); border-bottom-color: var(--accent); }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 5px 7px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; vertical-align: middle; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; background: var(--surface); position: sticky; top: 0; }
+th.grp { text-align: center; border-bottom: 0; padding-bottom: 0; }
+td.n, th.n { text-align: right; }
+td.sep, th.sep { border-left: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--accent-soft); }
+tr.flag td { background: color-mix(in srgb, var(--crit) 10%, transparent); }
+input.dflt { color: var(--faint); }
+input.note { width: 13em; }
+.hist { color: var(--muted); font-size: 12.5px; }
+.badge { font-size: 10px; font-weight: 700; color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 0 4px; margin-left: 5px; }
+.title { color: var(--muted); max-width: 210px; overflow: hidden; text-overflow: ellipsis; }
+.st { display: inline-flex; gap: 3px; align-items: center; justify-content: flex-end; min-width: 3em; padding: 1px 6px; border-radius: 5px; }
+.st.good { background: color-mix(in srgb, var(--good) 20%, transparent); }
+.st.warnc { background: color-mix(in srgb, var(--warnc) 30%, transparent); }
+.st.crit { background: color-mix(in srgb, var(--crit) 26%, transparent); font-weight: 700; }
+.st .g { font-size: 10px; }
+.muted { color: var(--faint); }
+.warn { color: var(--warn); font-weight: 600; }
+.key { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 13px; color: var(--muted); margin: 0 0 10px; }
+.sum { display: flex; flex-wrap: wrap; gap: 8px 28px; padding: 10px 12px; margin: 12px 0; }
+.sum b { font-size: 18px; color: var(--accent); }
+.sum small { display: block; color: var(--muted); font-size: 12px; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 12px; }
+.actions p { margin: 0; flex: 1 1 260px; color: var(--muted); font-size: 13px; }
+.chip { border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; cursor: pointer; }
+#msg { font-size: 13px; color: var(--muted); padding: 0 12px 10px; min-height: 1em; }
+.add { display: flex; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--line); flex-wrap: wrap; align-items: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Section Planner</h1><span id="status" style="color:var(--muted);font-size:13px"></span></header>
+
+  <div class="panel bar">
+    <label class="ctl"><span>Academic year to plan</span><input class="year" id="year" placeholder="2027-2028"></label>
+    <div class="ctl"><span>Target students per section (used for suggestions)</span><div class="row">
+      in person <input type="number" id="tip" min="1"> online <input type="number" id="ton" min="1"></div></div>
+    <label class="ctl"><span id="base-label">Suggestions based on</span><select id="base"></select></label>
+    <label class="ctl"><span>Level</span><select id="level"><option value="">All</option><option>Undergrad</option><option>Grad</option></select></label>
+    <label class="ctl"><span>Courses</span><select id="scope"><option value="recent">Offered in the last 3 of this term</option><option value="all">All courses in the history</option></select></label>
+  </div>
+
+  <nav role="tablist" id="tabs"></nav>
+  <div class="key">Suggestion = students last <span id="k-term"></span> ÷ target, rounded up. Type your own number to change it.
+    Expected per section = last <span class="k-term2"></span> students ÷ your planned sections:
+    <span class="st good">≤ 40</span><span class="st warnc"><span class="g">◆</span>41–50</span><span class="st crit"><span class="g">▲</span>51+</span></div>
+
+  <div class="panel">
+    <div class="tbl"><table>
+      <thead>
+        <tr><th></th><th></th><th></th><th class="grp sep" colspan="2" id="h-last"></th><th class="grp sep" colspan="3">In person</th><th class="grp sep" colspan="3">Online</th><th class="sep"></th></tr>
+        <tr><th>Course</th><th>Title</th><th id="h-hist">History</th>
+          <th class="n sep">In person</th><th class="n">Online</th>
+          <th class="n sep">Suggest</th><th class="n">Plan</th><th class="n">Exp./sec</th>
+          <th class="n sep">Suggest</th><th class="n">Plan</th><th class="n">Exp./sec</th><th class="sep">Note</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+    <div class="add"><span style="color:var(--muted);font-size:13px">Add a course:</span>
+      <input id="a-num" placeholder="e.g. 459" style="width:6em" aria-label="Course number">
+      <input id="a-title" placeholder="Title (optional)" style="width:16em" aria-label="Course title"><button id="a-btn">Add</button></div>
+  </div>
+
+  <div class="panel sum" id="sum"></div>
+
+  <div class="panel actions">
+    <p>Entries are kept in this browser as a draft. <b>Save the file</b> to keep them (both Fall and Spring go in one file), then put it in the
+      SCHEDULING folder for that year. Nothing is uploaded anywhere.</p>
+    <button class="primary" id="save">Save file (.csv)</button>
+    <label><input type="file" id="open" accept=".csv" hidden><span class="chip" tabindex="0" role="button">Open saved file…</span></label>
+    <button id="reset">Start over</button>
+  </div>
+  <div id="msg"></div>
+</div>
+
+<script>
+const D = {"courses":[{"id":"FNBSLW 101","subject":"FNBSLW","course":"101","title":"Personal Finance","level":"Undergrad","terms":{"Spring 21":[1,70,0,0],"Fall 21":[2,87,0,0],"Spring 22":[1,69,0,0],"Fall 22":[3,151,0,0],"Spring 23":[4,139,1,53],"Fall 23":[2,84,1,69],"Spring 24":[1,60,1,59],"Fall 24":[4,257,1,65],"Spring 25":[3,111,1,63],"Fall 25":[4,225,1,53],"Spring 26":[3,119,1,44],"Fall 26":[5,89,1,18]}},{"id":"FNBSLW 341","subject":"FNBSLW","course":"341","title":"Business & Commercial Law","level":"Undergrad","terms":{"Spring 21":[4,305,1,60],"Fall 21":[7,319,1,60],"Spring 22":[7,258,1,67],"Fall 22":[7,353,1,78],"Spring 23":[7,298,1,78],"Fall 23":[7,374,1,76],"Spring 24":[7,291,1,53],"Fall 24":[7,366,1,73],"Spring 25":[7,308,1,61],"Fall 25":[7,399,1,67],"Spring 26":[8,367,1,73],"Fall 26":[7,375,1,56]}},{"id":"FNBSLW 342","subject":"FNBSLW","course":"342","title":"","level":"Undergrad","terms":{"Spring 21":[1,29,0,0],"Spring 22":[1,34,0,0],"Spring 23":[1,58,0,0],"Spring 24":[1,56,0,0],"Spring 25":[1,57,0,0],"Spring 26":[1,51,0,0]}},{"id":"FNBSLW 344","subject":"FNBSLW","course":"344","title":"Business Finance","level":"Undergrad","terms":{"Spring 21":[8,322,1,64],"Fall 21":[7,307,1,70],"Spring 22":[9,300,1,70],"Fall 22":[6,282,2,110],"Spring 23":[7,280,2,121],"Fall 23":[6,333,2,110],"Spring 24":[7,299,2,87],"Fall 24":[6,286,2,74],"Spring 25":[7,317,1,62],"Fall 25":[6,360,2,84],"Spring 26":[7,376,2,89],"Fall 26":[6,309,2,81]}},{"id":"FNBSLW 345","subject":"FNBSLW","course":"345","title":"Investments","level":"Undergrad","terms":{"Spring 21":[4,136,0,0],"Fall 21":[3,93,1,40],"Spring 22":[4,121,0,0],"Fall 22":[3,90,1,33],"Spring 23":[3,105,0,0],"Fall 23":[3,107,1,36],"Spring 24":[3,135,0,0],"Fall 24":[3,90,1,38],"Spring 25":[3,111,0,0],"Fall 25":[3,119,1,37],"Spring 26":[3,142,0,0],"Fall 26":[3,117,1,42]}},{"id":"FNBSLW 348","subject":"FNBSLW","course":"348","title":"Real Estate","level":"Undergrad","terms":{"Spring 21":[1,45,1,60],"Fall 21":[2,86,0,0],"Spring 22":[1,58,1,58],"Fall 22":[2,71,0,0],"Spring 23":[1,45,1,48],"Fall 23":[2,60,0,0],"Spring 24":[1,50,1,40],"Fall 24":[2,36,0,0],"Spring 25":[1,31,1,30],"Fall 25":[2,45,0,0],"Spring 26":[1,39,0,0],"Fall 26":[1,36,0,0]}},{"id":"FNBSLW 360","subject":"FNBSLW","course":"360","title":"Fin Mkts & Institutions","level":"Undergrad","terms":{"Spring 21":[3,118,0,0],"Fall 21":[3,95,1,33],"Spring 22":[4,118,0,0],"Fall 22":[3,65,1,43],"Spring 23":[3,102,0,0],"Fall 23":[3,85,1,51],"Spring 24":[3,136,0,0],"Fall 24":[3,78,1,50],"Spring 25":[3,104,0,0],"Fall 25":[3,88,1,37],"Spring 26":[3,143,0,0],"Fall 26":[3,92,1,42]}},{"id":"FNBSLW 370","subject":"FNBSLW","course":"370","title":"","level":"Undergrad","terms":{"Fall 21":[1,27,0,0],"Fall 22":[1,16,0,0],"Fall 23":[1,15,0,0],"Fall 24":[1,18,0,0],"Fall 25":[1,14,0,0],"Fall 26":[1,15,0,0]}},{"id":"FNBSLW 377","subject":"FNBSLW","course":"377","title":"","level":"Undergrad","terms":{"Fall 25":[1,13,0,0],"Fall 26":[0,0,1,12]}},{"id":"FNBSLW 387","subject":"FNBSLW","course":"387","title":"","level":"Undergrad","terms":{"Spring 21":[1,20,0,0],"Spring 22":[1,18,0,0],"Spring 23":[1,25,0,0],"Spring 24":[1,34,0,0],"Spring 25":[1,45,0,0],"Spring 26":[1,51,0,0]}},{"id":"FNBSLW 401","subject":"FNBSLW","course":"401","title":"Essential Financial Plann","level":"Undergrad","terms":{"Spring 21":[1,50,0,0],"Fall 21":[1,41,1,39],"Spring 22":[1,50,0,0],"Fall 22":[1,48,1,35],"Spring 23":[1,48,0,0],"Fall 23":[1,48,1,54],"Spring 24":[1,56,0,0],"Fall 24":[1,40,1,42],"Spring 25":[1,43,0,0],"Fall 25":[1,51,1,33],"Spring 26":[1,49,0,0],"Fall 26":[1,51,1,20]}},{"id":"FNBSLW 402","subject":"FNBSLW","course":"402","title":"Adv Ret & Financial Plan","level":"Undergrad","terms":{"Spring 21":[1,37,0,0],"Fall 21":[1,18,0,0],"Spring 22":[1,25,0,0],"Fall 22":[1,32,0,0],"Spring 23":[1,21,1,9],"Fall 23":[1,17,0,0],"Spring 24":[1,18,1,14],"Fall 24":[1,11,0,0],"Spring 25":[1,33,1,20],"Fall 25":[1,18,0,0],"Spring 26":[1,31,1,14],"Fall 26":[1,18,0,0]}},{"id":"FNBSLW 410","subject":"FNBSLW","course":"410","title":"","level":"Undergrad","terms":{"Spring 21":[2,48,0,0],"Fall 21":[1,27,0,0],"Fall 22":[1,34,0,0],"Spring 23":[1,37,0,0],"Fall 23":[1,22,0,0],"Fall 24":[1,33,0,0],"Spring 25":[1,46,0,0],"Fall 25":[1,29,0,0],"Spring 26":[1,40,0,0]}},{"id":"FNBSLW 420","subject":"FNBSLW","course":"420","title":"","level":"Undergrad","terms":{"Fall 21":[1,14,0,0],"Fall 24":[1,13,0,0],"Fall 25":[0,0,1,15],"Fall 26":[0,0,1,16]}},{"id":"FNBSLW 421","subject":"FNBSLW","course":"421","title":"","level":"Undergrad","terms":{"Spring 25":[0,0,1,12],"Spring 26":[0,0,1,23]}},{"id":"FNBSLW 422","subject":"FNBSLW","course":"422","title":"","level":"Undergrad","terms":{"Spring 25":[0,0,1,4],"Spring 26":[0,0,1,5]}},{"id":"FNBSLW 430","subject":"FNBSLW","course":"430","title":"Financial Futures/Options","level":"Undergrad","terms":{"Fall 21":[1,16,0,0],"Fall 22":[1,11,0,0],"Fall 23":[1,23,0,0],"Fall 24":[1,25,0,0],"Fall 25":[1,34,0,0],"Fall 26":[1,29,0,0]}},{"id":"FNBSLW 433","subject":"FNBSLW","course":"433","title":"","level":"Undergrad","terms":{"Spring 21":[1,21,0,0],"Spring 22":[1,17,0,0],"Spring 23":[1,21,0,0],"Spring 24":[1,28,0,0],"Spring 25":[1,23,0,0],"Spring 26":[1,24,0,0]}},{"id":"FNBSLW 434","subject":"FNBSLW","course":"434","title":"Real Estate Law","level":"Undergrad","terms":{"Fall 21":[1,14,0,0],"Fall 22":[1,21,0,0],"Fall 23":[1,34,0,0],"Fall 24":[1,16,0,0],"Fall 25":[1,23,0,0],"Fall 26":[1,34,0,0]}},{"id":"FNBSLW 442","subject":"FNBSLW","course":"442","title":"Estates And Trusts","level":"Undergrad","terms":{"Spring 21":[1,41,1,23],"Fall 21":[1,45,0,0],"Spring 22":[1,42,1,31],"Fall 22":[1,43,0,0],"Spring 23":[1,19,1,48],"Fall 23":[1,34,0,0],"Spring 24":[1,37,1,35],"Fall 24":[1,56,0,0],"Spring 25":[1,41,1,33],"Fall 25":[1,49,0,0],"Spring 26":[1,49,1,38],"Fall 26":[1,44,1,12]}},{"id":"FNBSLW 443","subject":"FNBSLW","course":"443","title":"","level":"Undergrad","terms":{"Spring 21":[0,0,1,16]}},{"id":"FNBSLW 444","subject":"FNBSLW","course":"444","title":"Corporate Fin Mgnt Dec","level":"Undergrad","terms":{"Spring 21":[3,86,1,23],"Fall 21":[4,96,0,0],"Spring 22":[3,79,1,27],"Fall 22":[3,95,0,0],"Spring 23":[3,74,1,39],"Fall 23":[3,77,0,0],"Spring 24":[2,94,1,41],"Fall 24":[3,90,0,0],"Spring 25":[2,88,1,41],"Fall 25":[3,86,0,0],"Spring 26":[2,67,1,30],"Fall 26":[3,101,0,0]}},{"id":"FNBSLW 446","subject":"FNBSLW","course":"446","title":"Insurance","level":"Undergrad","terms":{"Spring 21":[1,47,0,0],"Fall 21":[1,26,1,44],"Spring 22":[1,42,1,31],"Fall 22":[1,37,1,39],"Spring 23":[1,33,1,18],"Fall 23":[1,32,1,42],"Spring 24":[1,47,1,30],"Fall 24":[1,53,1,28],"Spring 25":[1,47,1,25],"Fall 25":[1,40,1,29],"Spring 26":[1,51,1,33],"Fall 26":[1,40,1,29]}},{"id":"FNBSLW 455","subject":"FNBSLW","course":"455","title":"Corp Gov & Admin Law","level":"Undergrad","terms":{"Fall 22":[1,27,0,0],"Fall 23":[1,39,0,0],"Fall 24":[1,43,0,0],"Fall 25":[1,39,0,0],"Fall 26":[1,48,0,0]}},{"id":"FNBSLW 456","subject":"FNBSLW","course":"456","title":"Security Analysis","level":"Undergrad","terms":{"Spring 21":[3,63,1,31],"Fall 21":[4,93,0,0],"Spring 22":[3,58,1,50],"Fall 22":[3,92,0,0],"Spring 23":[3,62,1,45],"Fall 23":[3,91,0,0],"Spring 24":[2,69,1,61],"Fall 24":[3,101,0,0],"Spring 25":[2,77,1,44],"Fall 25":[3,90,0,0],"Spring 26":[2,84,1,30],"Fall 26":[3,111,0,0]}},{"id":"FNBSLW 457","subject":"FNBSLW","course":"457","title":"","level":"Undergrad","terms":{"Spring 21":[1,20,0,0],"Spring 22":[1,38,0,0],"Spring 23":[1,20,0,0],"Spring 24":[1,30,0,0],"Spring 25":[1,19,0,0],"Spring 26":[1,19,0,0]}},{"id":"FNBSLW 458","subject":"FNBSLW","course":"458","title":"Real Estate Investments","level":"Undergrad","terms":{"Fall 21":[1,33,0,0],"Fall 22":[1,23,0,0],"Fall 23":[1,24,0,0],"Fall 24":[1,19,0,0],"Fall 25":[1,13,0,0],"Fall 26":[1,12,0,0]}},{"id":"FNBSLW 460","subject":"FNBSLW","course":"460","title":"Adv Prpty/Casualty Ins","level":"Undergrad","terms":{"Fall 21":[1,10,0,0],"Fall 22":[1,6,0,0],"Fall 23":[1,11,0,0],"Fall 24":[1,11,0,0],"Fall 25":[1,7,0,0],"Fall 26":[1,3,0,0]}},{"id":"FNBSLW 464","subject":"FNBSLW","course":"464","title":"","level":"Undergrad","terms":{"Spring 21":[1,19,0,0],"Spring 22":[1,6,0,0],"Spring 23":[1,10,0,0],"Spring 24":[1,11,0,0],"Spring 25":[1,11,0,0],"Spring 26":[1,8,0,0]}},{"id":"FNBSLW 472","subject":"FNBSLW","course":"472","title":"Bloomberg Fs & Ws Prep","level":"Undergrad","terms":{"Spring 21":[2,10,0,0],"Fall 21":[2,19,0,0],"Spring 22":[2,12,0,0],"Fall 22":[2,20,0,0],"Spring 23":[2,15,0,0],"Fall 23":[2,23,0,0],"Spring 24":[2,20,0,0],"Fall 24":[2,20,0,0],"Spring 25":[2,21,0,0],"Fall 25":[3,32,0,0],"Spring 26":[2,14,0,0],"Fall 26":[2,14,0,0]}},{"id":"FNBSLW 484","subject":"FNBSLW","course":"484","title":"Applied Investments","level":"Undergrad","terms":{"Spring 21":[1,9,0,0],"Fall 21":[1,12,0,0],"Spring 22":[1,12,0,0],"Fall 22":[1,10,0,0],"Spring 23":[1,11,0,0],"Fall 23":[1,14,0,0],"Spring 24":[1,14,0,0],"Fall 24":[1,10,0,0],"Spring 25":[1,10,0,0],"Fall 25":[1,10,0,0],"Spring 26":[1,10,0,0],"Fall 26":[1,7,0,0]}},{"id":"FNBSLW 491","subject":"FNBSLW","course":"491","title":"","level":"Undergrad","terms":{"Spring 26":[1,12,0,0]}},{"id":"FNBSLW 493","subject":"FNBSLW","course":"493","title":"","level":"Undergrad","terms":{"Spring 21":[1,7,0,0],"Fall 21":[1,6,0,0],"Spring 22":[1,2,0,0],"Fall 22":[1,7,0,0],"Spring 23":[1,6,0,0],"Fall 23":[1,4,0,0],"Spring 24":[1,11,0,0],"Fall 24":[1,4,0,0],"Spring 25":[1,4,0,0],"Fall 25":[1,7,0,0],"Spring 26":[1,5,0,0]}},{"id":"FNBSLW 498","subject":"FNBSLW","course":"498","title":"","level":"Undergrad","terms":{"Spring 21":[2,2,0,0],"Fall 22":[1,1,0,0],"Spring 23":[1,1,0,0],"Fall 23":[1,1,0,0],"Spring 25":[2,2,0,0],"Spring 26":[1,2,1,1]}},{"id":"FNBSLW 718","subject":"FNBSLW","course":"718","title":"","level":"Grad","terms":{"Spring 21":[0,0,1,64],"Fall 21":[0,0,2,84],"Spring 22":[0,0,1,63],"Fall 22":[0,0,1,66],"Spring 23":[0,0,1,68],"Fall 23":[0,0,1,60],"Spring 24":[0,0,1,62],"Fall 24":[0,0,1,63],"Spring 25":[0,0,1,56],"Fall 25":[0,0,1,43],"Spring 26":[0,0,1,31]}},{"id":"FNBSLW 732","subject":"FNBSLW","course":"732","title":"","level":"Grad","terms":{"Spring 21":[0,0,1,35],"Fall 21":[0,0,1,19],"Fall 22":[0,0,1,32],"Spring 24":[0,0,1,16],"Fall 26":[0,0,1,14]}},{"id":"FNBSLW 735","subject":"FNBSLW","course":"735","title":"","level":"Grad","terms":{"Spring 21":[1,13,2,124],"Fall 21":[1,17,2,130],"Spring 22":[1,12,2,121],"Fall 22":[0,0,3,128],"Spring 23":[1,13,2,106],"Fall 23":[0,0,2,111],"Spring 24":[1,6,2,113],"Fall 24":[0,0,3,102],"Spring 25":[0,0,3,100],"Fall 25":[0,0,3,91],"Spring 26":[0,0,2,97],"Fall 26":[0,0,2,58]}},{"id":"FNBSLW 736","subject":"FNBSLW","course":"736","title":"","level":"Grad","terms":{"Fall 21":[0,0,1,33],"Spring 23":[0,0,1,28],"Fall 23":[0,0,1,36]}},{"id":"FNBSLW 737","subject":"FNBSLW","course":"737","title":"","level":"Grad","terms":{"Spring 21":[0,0,1,34],"Fall 22":[0,0,1,43],"Fall 24":[0,0,1,43],"Spring 26":[0,0,1,32]}},{"id":"FNBSLW 740","subject":"FNBSLW","course":"740","title":"","level":"Grad","terms":{"Spring 21":[0,0,1,11],"Spring 22":[0,0,1,46],"Spring 24":[0,0,1,19],"Spring 26":[0,0,1,11],"Fall 26":[0,0,1,10]}},{"id":"FNBSLW 755","subject":"FNBSLW","course":"755","title":"","level":"Grad","terms":{"Spring 21":[0,0,1,29],"Spring 22":[0,0,1,64],"Spring 24":[0,0,1,51],"Fall 25":[0,0,1,46]}},{"id":"FNBSLW 760","subject":"FNBSLW","course":"760","title":"","level":"Grad","terms":{"Fall 21":[0,0,1,31],"Spring 23":[0,0,1,28],"Spring 25":[0,0,1,39],"Fall 26":[0,0,1,22]}},{"id":"FNBSLW 765","subject":"FNBSLW","course":"765","title":"","level":"Grad","terms":{"Spring 23":[0,0,1,39],"Spring 25":[0,0,1,39]}},{"id":"FNBSLW 770","subject":"FNBSLW","course":"770","title":"","level":"Grad","terms":{"Spring 21":[0,0,1,27],"Spring 22":[1,9,0,0],"Fall 22":[0,0,1,54],"Fall 24":[0,0,1,50],"Spring 25":[0,0,1,14]}},{"id":"FNBSLW 780","subject":"FNBSLW","course":"780","title":"","level":"Grad","terms":{"Fall 21":[0,0,1,18],"Fall 23":[0,0,1,30],"Fall 25":[0,0,1,22],"Spring 26":[0,0,1,17]}},{"id":"FNBSLW 798","subject":"FNBSLW","course":"798","title":"","level":"Grad","terms":{"Spring 21":[1,1,0,0],"Fall 21":[0,0,1,1],"Spring 22":[0,0,1,1],"Fall 22":[1,2,0,0],"Fall 23":[2,3,0,0],"Fall 25":[0,0,1,2]}}],"terms":{"Fall":["Fall 21","Fall 22","Fall 23","Fall 24","Fall 25","Fall 26"],"Spring":["Spring 21","Spring 22","Spring 23","Spring 24","Spring 25","Spring 26"]}};
+const STORE = "section-planner-draft-v1";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const SUBJECT = D && D.courses[0] ? D.courses[0].subject : "FNBSLW";
+
+function fresh() {
+  const y = new Date().getFullYear() + (new Date().getMonth() >= 6 ? 1 : 0);
+  return { year: `${y}-${y + 1}`, tip: 40, ton: 40, season: "Fall", level: "", scope: "recent", plan: {}, extra: [], base: { Fall: "", Spring: "" } };
+}
+let S; try { S = JSON.parse(localStorage.getItem(STORE)); } catch (e) {}
+if (!S || !S.plan) S = fresh();
+if (!S.base) S.base = { Fall: "", Spring: "" };
+const persist = () => { try { localStorage.setItem(STORE, JSON.stringify(S)); } catch (e) {} };
+
+const courses = () => (D ? D.courses : []).concat(S.extra.map(c => ({ ...c, terms: {} })));
+const semesters = () => { const m = /^(\d{4})\s*-\s*(\d{4})$/.exec((S.year || "").trim()); return m ? { Fall: `Fall ${m[1]}`, Spring: `Spring ${m[2]}` } : { Fall: "Fall", Spring: "Spring" }; };
+const seasonTerms = s => (D ? D.terms[s] : []);
+const lastTerm = s => (S.base[s] && seasonTerms(s).includes(S.base[s]) ? S.base[s] : seasonTerms(s).slice(-1)[0]) || "";
+const hist = (c, s) => seasonTerms(s).slice(-3);
+const lastOf = (c, s) => c.terms[lastTerm(s)] || [0, 0, 0, 0];
+const suggest = (c, s) => { const l = lastOf(c, s); return [l[1] ? Math.ceil(l[1] / S.tip) : 0, l[3] ? Math.ceil(l[3] / S.ton) : 0]; };
+const key = (c, s) => s + "|" + c.id;
+const planOf = (c, s) => { const p = S.plan[key(c, s)] || {}, g = suggest(c, s); return { ip: p.ip ?? g[0], on: p.on ?? g[1], note: p.note || "", setIp: p.ip != null, setOn: p.on != null }; };
+const shortT = t => t ? t[0] + t.slice(-2) : "";
+
+function chip(avg) {
+  if (avg == null) return '<span class="muted">–</span>';
+  const a = Math.round(avg), [c, g] = a <= 40 ? ["good", ""] : a <= 50 ? ["warnc", "◆"] : ["crit", "▲"];
+  return `<span class="st ${c}">${g ? `<span class="g">${g}</span>` : ""}${a}</span>`;
+}
+const lastCell = (sec, stu) => sec ? `${sec} <span class="muted">· ${stu}</span>` : '<span class="muted">–</span>';
+
+function visible(s) {
+  const recent = new Set(seasonTerms(s).slice(-3));
+  return courses().filter(c => (!S.level || c.level === S.level)
+    && (S.scope === "all" || c.extra || Object.keys(c.terms).some(t => recent.has(t)) || S.plan[key(c, s)]));
+}
+
+function render() {
+  const sem = semesters(), s = S.season, lt = lastTerm(s);
+  $("base-label").textContent = `${s} suggestions based on`;
+  $("base").innerHTML = seasonTerms(s).slice().reverse().map(t => `<option ${t === lt ? "selected" : ""}>${esc(t)}</option>`).join("");
+  $("year").value = S.year; $("tip").value = S.tip; $("ton").value = S.ton; $("level").value = S.level; $("scope").value = S.scope;
+  $("tabs").innerHTML = ["Fall", "Spring"].map(x => `<button role="tab" data-s="${x}" aria-selected="${x === s}">Plan ${esc(sem[x])}</button>`).join("");
+  $("k-term").textContent = lt; document.querySelector(".k-term2").textContent = lt;
+  $("h-last").textContent = `Last ${lt}: sections · students`;
+  $("h-hist").textContent = `History (sections · students)`;
+  const list = visible(s);
+  $("rows").innerHTML = list.map(c => {
+    const l = lastOf(c, s), g = suggest(c, s), p = planOf(c, s), k = esc(key(c, s));
+    const h = hist(c, s).map(t => { const v = c.terms[t]; return v ? `${shortT(t)} ${v[0] + v[2]}·${v[1] + v[3]}` : `${shortT(t)} –`; }).join("&ensp;");
+    const expIp = p.ip ? l[1] / p.ip : null, expOn = p.on ? l[3] / p.on : null;
+    const orphan = (l[1] && !p.ip) || (l[3] && !p.on);
+    const inp = (f, v, set) => `<input type="number" min="0" step="1" data-k="${k}" data-f="${f}" value="${v}" class="${set ? "" : "dflt"}" aria-label="${esc(c.id)} ${f === "ip" ? "in person" : "online"} sections">`;
+    return `<tr class="${orphan ? "flag" : ""}" title="${orphan ? "Students last term, but 0 sections planned for that mode" : ""}">
+      <td>${esc(c.id)}${c.level === "Grad" ? '<span class="badge">GRAD</span>' : ""}</td>
+      <td class="title" title="${esc(c.title)}">${esc(c.title) || '<span class="muted">–</span>'}</td>
+      <td class="hist">${h}</td>
+      <td class="n sep">${lastCell(l[0], l[1])}</td><td class="n">${lastCell(l[2], l[3])}</td>
+      <td class="n sep muted">${g[0]}</td><td class="n">${inp("ip", p.ip, p.setIp)}</td><td class="n">${chip(expIp)}</td>
+      <td class="n sep muted">${g[1]}</td><td class="n">${inp("on", p.on, p.setOn)}</td><td class="n">${chip(expOn)}</td>
+      <td class="sep"><input class="note" data-k="${k}" data-f="note" value="${esc(p.note)}" placeholder="e.g. new prep, cap 30" aria-label="${esc(c.id)} note"></td></tr>`;
+  }).join("") || `<tr><td colspan="12" class="muted" style="padding:20px;text-align:center">No courses match.</td></tr>`;
+
+  const tot = x => courses().reduce((t, c) => { const p = planOf(c, x); return [t[0] + p.ip, t[1] + p.on]; }, [0, 0]);
+  const was = x => courses().reduce((t, c) => { const l = lastOf(c, x); return [t[0] + l[0], t[1] + l[2]]; }, [0, 0]);
+  const f = tot("Fall"), sp = tot("Spring"), wf = was("Fall"), ws = was("Spring");
+  const orphans = ["Fall", "Spring"].map(x => courses().filter(c => { const l = lastOf(c, x), p = planOf(c, x); return (l[1] && !p.ip) || (l[3] && !p.on); }).length);
+  $("sum").innerHTML = `
+    <div><b>${f[0] + f[1]}</b><small>${esc(sem.Fall)}: ${f[0]} in person + ${f[1]} online<br>(${esc(lastTerm("Fall"))}: ${wf[0]} + ${wf[1]} = ${wf[0] + wf[1]})</small></div>
+    <div><b>${sp[0] + sp[1]}</b><small>${esc(sem.Spring)}: ${sp[0]} in person + ${sp[1]} online<br>(${esc(lastTerm("Spring"))}: ${ws[0]} + ${ws[1]} = ${ws[0] + ws[1]})</small></div>
+    ${orphans[0] + orphans[1] ? `<div><b class="warn">${orphans[0]} · ${orphans[1]}</b><small>courses with students last time<br>but 0 sections planned (Fall · Spring)</small></div>` : ""}`;
+  $("status").textContent = `Draft saved in this browser · ${S.year}`;
+  persist();
+}
+
+// ---- events
+$("year").addEventListener("change", e => { S.year = e.target.value.trim(); render(); });
+for (const id of ["tip", "ton"]) $(id).addEventListener("change", e => { S[id] = Math.max(1, Math.round(+e.target.value) || S[id]); render(); });
+$("level").addEventListener("change", e => { S.level = e.target.value; render(); });
+$("base").addEventListener("change", e => {   // keep typed numbers; only the suggestions move
+  const s = S.season, before = courses().map(c => [c, planOf(c, s)]);
+  S.base[s] = e.target.value;
+  for (const [c, p] of before) { const g = suggest(c, s); S.plan[key(c, s)] = { ...(S.plan[key(c, s)] || {}), ip: p.setIp ? (p.ip === g[0] ? null : p.ip) : null, on: p.setOn ? (p.on === g[1] ? null : p.on) : null }; }
+  render();
+});
+$("scope").addEventListener("change", e => { S.scope = e.target.value; render(); });
+$("tabs").addEventListener("click", e => { const b = e.target.closest("[data-s]"); if (b) { S.season = b.dataset.s; render(); } });
+$("rows").addEventListener("change", e => {
+  const t = e.target, k = t.dataset.k; if (!k) return;
+  const p = S.plan[k] || (S.plan[k] = {});
+  if (t.dataset.f === "note") p.note = t.value;
+  else {
+    const [season, id] = k.split("|"), c = courses().find(x => x.id === id), g = suggest(c, season)[t.dataset.f === "ip" ? 0 : 1];
+    const v = t.value === "" ? null : Math.max(0, Math.round(+t.value));
+    p[t.dataset.f] = v === g ? null : v;
+  }
+  render();
+});
+$("a-btn").addEventListener("click", () => {
+  const n = $("a-num").value.trim().replace(/^[A-Za-z]+\s*/, ""); if (!n) return;
+  const id = `${SUBJECT} ${n}`;
+  if (courses().some(c => c.id === id)) { $("msg").textContent = `${id} is already in the list (try "All courses in the history").`; return; }
+  S.extra.push({ id, subject: SUBJECT, course: n, title: $("a-title").value.trim(), level: +n >= 500 ? "Grad" : "Undergrad", extra: true });
+  $("a-num").value = ""; $("a-title").value = ""; $("msg").textContent = `Added ${id}.`; render();
+});
+
+const COLS = ["academic_year", "term", "course", "title", "level", "planned_in_person", "planned_online", "planned_total",
+  "suggested_in_person", "suggested_online", "based_on_term", "last_in_person_sections", "last_in_person_students",
+  "last_online_sections", "last_online_students", "expected_per_in_person_section", "expected_per_online_section", "note"];
+$("save").addEventListener("click", () => {
+  const sem = semesters(), q = v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v ?? "");
+  const lines = [COLS.join(",")];
+  for (const s of ["Fall", "Spring"]) for (const c of courses()) {
+    const l = lastOf(c, s), g = suggest(c, s), p = planOf(c, s);
+    if (!p.ip && !p.on && !l[0] && !l[2] && !p.note) continue;     // not offered last time and not planned
+    lines.push([S.year, sem[s], c.id, c.title, c.level, p.ip, p.on, p.ip + p.on, g[0], g[1], lastTerm(s), l[0], l[1], l[2], l[3],
+      p.ip ? (l[1] / p.ip).toFixed(1) : "", p.on ? (l[3] / p.on).toFixed(1) : "", p.note].map(q).join(","));
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿" + lines.join("\r\n") + "\r\n"], { type: "text/csv" }));
+  a.download = `section_plan_${S.year || "draft"}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  $("msg").textContent = `Saved section_plan_${S.year}.csv to your Downloads folder (${lines.length - 1} rows).`;
+});
+
+function parseCSV(text) {
+  const rows = []; let row = [], f = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true; else if (c === ",") { row.push(f); f = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(f); rows.push(row); row = []; f = ""; }
+    else f += c;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim()));
+}
+$("open").addEventListener("change", async e => {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    const rows = parseCSV((await file.text()).replace(/^﻿/, ""));
+    const h = rows[0].map(x => x.trim().toLowerCase()), ix = c => h.indexOf(c);
+    if (ix("planned_in_person") < 0) throw new Error("This doesn't look like a saved Section Planner file.");
+    const next = { ...fresh(), tip: S.tip, ton: S.ton, season: S.season, level: S.level, scope: S.scope };
+    next.year = rows[1]?.[ix("academic_year")] || next.year;
+    for (const r of rows.slice(1)) { const b = r[ix("based_on_term")] || ""; if (b) next.base[/^spring/i.test(b) ? "Spring" : "Fall"] = b; }
+    S = next;
+    for (const r of rows.slice(1)) {
+      const season = /^spring/i.test(r[ix("term")]) ? "Spring" : "Fall", id = r[ix("course")];
+      if (!courses().some(c => c.id === id)) {
+        const n = id.split(" ").pop();
+        S.extra.push({ id, subject: id.split(" ")[0], course: n, title: r[ix("title")] || "", level: r[ix("level")] || "Undergrad", extra: true });
+      }
+      const c = courses().find(x => x.id === id), g = suggest(c, season), ip = +r[ix("planned_in_person")] || 0, on = +r[ix("planned_online")] || 0;
+      S.plan[key(c, season)] = { ip: ip === g[0] ? null : ip, on: on === g[1] ? null : on, note: r[ix("note")] || "" };
+    }
+    render(); $("msg").textContent = `Opened ${file.name} (${S.year}).`;
+  } catch (err) { $("msg").textContent = String(err.message || err); }
+  e.target.value = "";
+});
+document.querySelector(".actions .chip").addEventListener("keydown", e => { if (e.key === "Enter") $("open").click(); });
+$("reset").addEventListener("click", () => {
+  if (!confirm("Clear all planned numbers and notes? (Save the file first if you want to keep them.)")) return;
+  S = fresh(); render(); $("msg").textContent = "";
+});
+
+render();
+</script>
+</body>
+</html>

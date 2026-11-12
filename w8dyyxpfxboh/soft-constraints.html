@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soft Constraints</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f5f9; --surface: #ffffff; --text: #1d1b22; --muted: #5f5b6b; --faint: #8b8697; --line: #e3e0ea;
+  --accent: #4b2e83; --accent-soft: #ece6f6;
+  --high: #c2410c; --high-soft: #fdeee6; --med: #2563b8; --med-soft: #e8f0fb; --low: #6b7280; --low-soft: #f1f2f4;
+  --ok: #1b6e2a; --err: #b71c1c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #141317; --surface: #1d1b22; --text: #ece9f2; --muted: #a7a1b4; --faint: #7d7889; --line: #34303e;
+    --accent: #b9a3e8; --accent-soft: #2c2540;
+    --high: #fb923c; --high-soft: #3a2418; --med: #7fb0f0; --med-soft: #1c2638; --low: #a1a1aa; --low-soft: #26262b;
+    --ok: #7fd18f; --err: #ff8a80;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #141317; --surface: #1d1b22; --text: #ece9f2; --muted: #a7a1b4; --faint: #7d7889; --line: #34303e;
+  --accent: #b9a3e8; --accent-soft: #2c2540;
+  --high: #fb923c; --high-soft: #3a2418; --med: #7fb0f0; --med-soft: #1c2638; --low: #a1a1aa; --low-soft: #26262b;
+  --ok: #7fd18f; --err: #ff8a80;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
+.wrap { max-width: 1500px; margin: 0 auto; padding: 16px; }
+header h1 { margin: 0 0 6px; font-size: 22px; color: var(--accent); }
+.intro { margin: 0 0 14px; max-width: 760px; color: var(--muted); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; padding: 10px 12px; margin-bottom: 12px; }
+.toolbar .grp { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.toolbar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
+button { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+button.danger:hover { border-color: var(--err); color: var(--err); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+#state { font-size: 13px; color: var(--muted); margin-left: auto; }
+#state.dirty { color: var(--high); }
+.tbl { overflow-x: auto; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1300px; }
+th, td { padding: 6px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; background: var(--surface); position: sticky; top: 0; z-index: 1; }
+tbody tr:last-child td { border-bottom: 0; }
+td:first-child { border-left: 4px solid transparent; }
+tr.p-High td:first-child { border-left-color: var(--high); }
+tr.p-Medium td:first-child { border-left-color: var(--med); }
+tr.p-Low td:first-child { border-left-color: var(--low); }
+tr.p-High { background: var(--high-soft); } tr.p-Medium { background: var(--med-soft); } tr.p-Low { background: var(--low-soft); }
+.id { font-weight: 700; font-variant-numeric: tabular-nums; padding-top: 11px; white-space: nowrap; }
+input, select, textarea { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; width: 100%; }
+input[type=number] { width: 4.6em; text-align: right; }
+textarea { resize: vertical; min-height: 34px; height: 54px; }
+.w-applies { min-width: 120px; } .w-type { min-width: 205px; } .w-target { min-width: 125px; }
+.w-prio { min-width: 104px; } .w-over { min-width: 195px; } .w-expl { min-width: 72px; } .w-reason { min-width: 200px; } .w-notes { min-width: 130px; }
+.rowbtns { display: flex; flex-direction: column; gap: 4px; white-space: nowrap; }
+.rowbtns button { padding: 3px 7px; font-size: 13px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); padding: 8px 12px; border-top: 1px solid var(--line); }
+.legend i { display: inline-block; width: 4px; height: 14px; vertical-align: -2px; margin-right: 5px; border-radius: 2px; }
+#msg { min-height: 1.3em; margin: 10px 2px; font-size: 13px; color: var(--ok); }
+#msg.err { color: var(--err); }
+.empty { padding: 26px; text-align: center; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Soft Constraints</h1>
+    <p class="intro">Use this tool to enter course scheduling preferences that are important but not absolute.
+      Each row should contain one atomic rule. Avoid combining multiple rules in the same row.</p>
+  </header>
+
+  <main>
+    <section class="panel toolbar" aria-label="Actions">
+      <div class="grp">
+        <button class="primary" id="add" type="button">+ Add constraint</button>
+      </div>
+      <span class="sep" aria-hidden="true"></span>
+      <div class="grp" aria-label="Export">
+        <button id="csv" type="button">Export CSV</button>
+        <button id="copytxt" type="button">Copy as plain text</button>
+        <button id="copymd" type="button">Copy as Markdown</button>
+        <input type="file" id="opencsv" accept=".csv" class="sr" tabindex="-1" aria-hidden="true">
+        <button type="button" id="openbtn">Open CSV…</button>
+      </div>
+      <span class="sep" aria-hidden="true"></span>
+      <div class="grp" aria-label="Browser storage">
+        <button id="save" type="button">Save in browser</button>
+        <button id="load" type="button">Load from browser</button>
+        <button id="clear" type="button" class="danger">Clear all</button>
+      </div>
+      <span id="state" role="status"></span>
+    </section>
+
+    <section class="panel" aria-label="Soft constraints">
+      <div class="tbl">
+        <table>
+          <caption class="sr">Soft constraints, one per row</caption>
+          <thead><tr>
+            <th scope="col">ID</th><th scope="col">Applies to</th><th scope="col">Constraint type</th><th scope="col">Related course or target</th>
+            <th scope="col">Priority</th><th scope="col">Weight (1–100)</th><th scope="col">Can override?</th><th scope="col">Explain if overridden?</th>
+            <th scope="col">Reason</th><th scope="col">Notes</th><th scope="col"><span class="sr">Row actions</span></th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="legend" aria-hidden="true">
+        <span><i style="background:var(--high)"></i>High (default weight 80)</span>
+        <span><i style="background:var(--med)"></i>Medium (50)</span>
+        <span><i style="background:var(--low)"></i>Low (25)</span>
+        <span>Changing the priority resets the weight to its default unless you typed your own.</span>
+      </div>
+    </section>
+    <p id="msg" role="status" aria-live="polite"></p>
+  </main>
+</div>
+
+<datalist id="dl-courses">
+  <option value="FNBSLW 101"><option value="FNBSLW 341"><option value="FNBSLW 342"><option value="FNBSLW 344"><option value="FNBSLW 345">
+  <option value="FNBSLW 348"><option value="FNBSLW 360"><option value="FNBSLW 370"><option value="FNBSLW 377"><option value="FNBSLW 387">
+  <option value="FNBSLW 401"><option value="FNBSLW 402"><option value="FNBSLW 410"><option value="FNBSLW 420"><option value="FNBSLW 421">
+  <option value="FNBSLW 422"><option value="FNBSLW 430"><option value="FNBSLW 433"><option value="FNBSLW 434"><option value="FNBSLW 442">
+  <option value="FNBSLW 443"><option value="FNBSLW 444"><option value="FNBSLW 446"><option value="FNBSLW 455"><option value="FNBSLW 456">
+  <option value="FNBSLW 457"><option value="FNBSLW 458"><option value="FNBSLW 460"><option value="FNBSLW 464"><option value="FNBSLW 472">
+  <option value="FNBSLW 484"><option value="FNBSLW 491"><option value="FNBSLW 493"><option value="FNBSLW 498"><option value="FNBSLW 718">
+  <option value="FNBSLW 732"><option value="FNBSLW 735"><option value="FNBSLW 736"><option value="FNBSLW 737"><option value="FNBSLW 740">
+  <option value="FNBSLW 755"><option value="FNBSLW 760"><option value="FNBSLW 765"><option value="FNBSLW 770"><option value="FNBSLW 780">
+  <option value="FNBSLW 798"><option value="All undergraduate FNBSLW"><option value="All graduate FNBSLW"><option value="All online sections">
+</datalist>
+<datalist id="dl-targets">
+  <option value="Monday"><option value="Tuesday"><option value="Wednesday"><option value="Thursday"><option value="Friday">
+  <option value="MW"><option value="TR"><option value="MWF"><option value="Once a week (evening)">
+  <option value="Face-to-face"><option value="Online"><option value="Hybrid">
+  <option value="8:00 AM"><option value="9:00 AM"><option value="10:00 AM"><option value="11:00 AM"><option value="12:00 PM"><option value="1:00 PM">
+  <option value="2:00 PM"><option value="3:00 PM"><option value="4:00 PM"><option value="5:00 PM"><option value="6:00 PM">
+  <option value="Morning (before 12:00 PM)"><option value="Afternoon (12:00–5:00 PM)"><option value="Evening (after 5:00 PM)">
+  <option value="Bloomberg Lab"><option value="Computer lab"><option value="Auditorium"><option value="Medium Tiered"><option value="Flat">
+</datalist>
+
+<script>
+"use strict";
+const TYPES = ["Avoid course overlap", "Preferred latest start time", "Preferred earliest start time", "Preferred modality", "Avoid day",
+  "Preferred day pattern", "Preferred time window", "Avoid room type", "Preferred room type", "Other"];
+const PRIORITIES = ["High", "Medium", "Low"];
+const WEIGHT = { High: 80, Medium: 50, Low: 25 };
+const OVERRIDE = ["Yes", "No", "Only with chair approval"];
+const YESNO = ["Yes", "No"];
+const FIELDS = ["appliesTo", "type", "target", "priority", "weight", "canOverride", "explain", "reason", "notes"];
+const HEAD = ["Constraint ID", "Applies To", "Constraint Type", "Related Course or Target", "Priority", "Weight",
+  "Can Override?", "Requires Explanation if Overridden?", "Reason", "Notes"];
+const STORE = "soft-constraints-v1";
+
+const SAMPLES = [
+  { appliesTo: "FNBSLW 430", type: "Avoid course overlap", target: "FNBSLW 387", priority: "High", weight: 80,
+    canOverride: "Only with chair approval", explain: "Yes", reason: "Finance majors often need both.", notes: "" },
+  { appliesTo: "FNBSLW 430", type: "Preferred latest start time", target: "2:00 PM", priority: "Medium", weight: 50,
+    canOverride: "Yes", explain: "Yes", reason: "Later sections historically enroll poorly.", notes: "" },
+  { appliesTo: "FNBSLW 341", type: "Avoid day", target: "Friday", priority: "Low", weight: 25,
+    canOverride: "Yes", explain: "No", reason: "Faculty and student preference.", notes: "" },
+];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const blank = () => ({ appliesTo: "", type: TYPES[0], target: "", priority: "Medium", weight: 50, canOverride: "Yes", explain: "No", reason: "", notes: "" });
+const idOf = i => "SC" + String(i + 1).padStart(3, "0");
+let rows = SAMPLES.map(r => ({ ...r }));
+let dirty = false;
+
+function setDirty(d) {
+  dirty = d;
+  $("state").textContent = d ? "Unsaved changes" : "Saved in this browser";
+  $("state").className = d ? "dirty" : "";
+}
+function say(text, isErr) { $("msg").textContent = text; $("msg").className = isErr ? "err" : ""; }
+
+const opts = (list, val) => list.map(o => `<option ${o === val ? "selected" : ""}>${esc(o)}</option>`).join("");
+
+function render(focus) {
+  const tb = $("rows");
+  if (!rows.length) { tb.innerHTML = `<tr><td colspan="11" class="empty">No constraints yet. Use “+ Add constraint”.</td></tr>`; return; }
+  tb.innerHTML = rows.map((r, i) => {
+    const id = idOf(i), L = f => `aria-label="${id} ${f}"`;
+    return `<tr class="p-${esc(r.priority)}" data-i="${i}">
+      <th scope="row" class="id">${id}</th>
+      <td class="w-applies"><input list="dl-courses" data-f="appliesTo" value="${esc(r.appliesTo)}" placeholder="e.g. FNBSLW 344" ${L("applies to")}></td>
+      <td class="w-type"><select data-f="type" ${L("constraint type")}>${opts(TYPES, r.type)}</select></td>
+      <td class="w-target"><input list="${r.type === "Avoid course overlap" ? "dl-courses" : "dl-targets"}" data-f="target" value="${esc(r.target)}" placeholder="${r.type === "Avoid course overlap" ? "e.g. FNBSLW 387" : "e.g. Friday, 2:00 PM"}" ${L("related course or target")}></td>
+      <td class="w-prio"><select data-f="priority" ${L("priority")}>${opts(PRIORITIES, r.priority)}</select></td>
+      <td><input type="number" min="1" max="100" step="1" data-f="weight" value="${esc(r.weight)}" ${L("weight")}></td>
+      <td class="w-over"><select data-f="canOverride" ${L("can override")}>${opts(OVERRIDE, r.canOverride)}</select></td>
+      <td class="w-expl"><select data-f="explain" ${L("requires explanation if overridden")}>${opts(YESNO, r.explain)}</select></td>
+      <td class="w-reason"><textarea data-f="reason" placeholder="Why this preference exists" ${L("reason")}>${esc(r.reason)}</textarea></td>
+      <td class="w-notes"><textarea data-f="notes" placeholder="Optional" ${L("notes")}>${esc(r.notes)}</textarea></td>
+      <td><div class="rowbtns">
+        <button type="button" data-act="dup" title="Duplicate ${id}" aria-label="Duplicate ${id}">Duplicate</button>
+        <button type="button" data-act="del" class="danger" title="Delete ${id}" aria-label="Delete ${id}">Delete</button></div></td>
+    </tr>`;
+  }).join("");
+  if (focus != null) tb.querySelector(`tr[data-i="${focus}"] [data-f="appliesTo"]`)?.focus();
+}
+
+// ---- editing
+$("rows").addEventListener("input", e => {
+  const t = e.target, tr = t.closest("tr[data-i]"); if (!tr || !t.dataset.f) return;
+  const r = rows[+tr.dataset.i];
+  if (t.dataset.f === "weight") { r.weight = t.value; r.weightTyped = true; }
+  else if (t.tagName !== "SELECT") r[t.dataset.f] = t.value;
+  setDirty(true);
+});
+$("rows").addEventListener("change", e => {
+  const t = e.target, tr = t.closest("tr[data-i]"); if (!tr || !t.dataset.f) return;
+  const i = +tr.dataset.i, r = rows[i], f = t.dataset.f;
+  if (f === "weight") {
+    const v = Math.round(+t.value);
+    r.weight = Number.isFinite(v) && t.value !== "" ? Math.min(100, Math.max(1, v)) : WEIGHT[r.priority];
+    r.weightTyped = r.weight !== WEIGHT[r.priority];
+    t.value = r.weight;
+  } else if (f === "priority") {
+    const wasDefault = !r.weightTyped || +r.weight === WEIGHT[r.priority];
+    r.priority = t.value;
+    if (wasDefault) { r.weight = WEIGHT[r.priority]; r.weightTyped = false; }
+    render(); tr && $("rows").querySelector(`tr[data-i="${i}"] [data-f="priority"]`)?.focus();
+  } else if (f === "type") {
+    r.type = t.value; render(); $("rows").querySelector(`tr[data-i="${i}"] [data-f="type"]`)?.focus();
+  } else r[f] = t.value;
+  setDirty(true);
+});
+$("rows").addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const i = +b.closest("tr").dataset.i;
+  if (b.dataset.act === "dup") {
+    rows.splice(i + 1, 0, { ...rows[i] }); render(i + 1);
+    say(`Duplicated ${idOf(i)} as ${idOf(i + 1)}. IDs below it were renumbered.`);
+  } else {
+    const r = rows[i], label = r.appliesTo ? `${idOf(i)} (${r.appliesTo}: ${r.type})` : idOf(i);
+    if (!confirm(`Delete ${label}?`)) return;
+    rows.splice(i, 1); render(); say(`Deleted ${label}. IDs were renumbered.`);
+  }
+  setDirty(true);
+});
+$("add").addEventListener("click", () => { rows.push(blank()); render(rows.length - 1); setDirty(true); say(`Added ${idOf(rows.length - 1)}.`); });
+
+// ---- export
+const table = () => rows.map((r, i) => [idOf(i), r.appliesTo, r.type, r.target, r.priority, String(r.weight), r.canOverride, r.explain, r.reason, r.notes]);
+const oneLine = s => String(s ?? "").replace(/\s*\r?\n\s*/g, " ").trim();
+
+function toCSV() {
+  const q = v => /[",\r\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v);
+  return "﻿" + [HEAD].concat(table()).map(r => r.map(q).join(",")).join("\r\n") + "\r\n";
+}
+function toText() { return [HEAD].concat(table()).map(r => r.map(oneLine).join("\t")).join("\n"); }
+function toMarkdown() {
+  const cell = v => oneLine(v).replace(/\|/g, "\\|") || " ";
+  return [HEAD.map(cell).join(" | "), HEAD.map(() => "---").join(" | ")].concat(table().map(r => r.map(cell).join(" | ")))
+    .map(l => `| ${l} |`).join("\n");
+}
+async function copy(text, what) {
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) {
+    const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.append(ta); ta.select();
+    const ok = document.execCommand("copy"); ta.remove();
+    if (!ok) { say("Copy failed. Your browser blocked clipboard access.", true); return; }
+  }
+  say(`Copied ${rows.length} constraint${rows.length === 1 ? "" : "s"} as ${what}.`);
+}
+$("copytxt").addEventListener("click", () => copy(toText(), "plain text (tab-separated, pastes into Excel)"));
+$("copymd").addEventListener("click", () => copy(toMarkdown(), "Markdown"));
+$("csv").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([toCSV()], { type: "text/csv" }));
+  a.download = "soft_constraints.csv"; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  say(`Saved soft_constraints.csv (${rows.length} rows) to your Downloads folder.`);
+});
+
+// ---- open CSV (to move work between computers)
+function parseCSV(text) {
+  const out = []; let row = [], f = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true; else if (c === ",") { row.push(f); f = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(f); out.push(row); row = []; f = ""; }
+    else f += c;
+  }
+  if (f || row.length) { row.push(f); out.push(row); }
+  return out.filter(r => r.some(x => x.trim()));
+}
+$("openbtn").addEventListener("click", () => $("opencsv").click());
+$("opencsv").addEventListener("change", async e => {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    const data = parseCSV((await file.text()).replace(/^﻿/, ""));
+    if (!data.length || data[0][1] !== "Applies To") throw new Error("This doesn't look like a Soft Constraints CSV.");
+    if (dirty && rows.length && !confirm("Replace the current table with this file?")) return;
+    rows = data.slice(1).map(r => {
+      const o = {}; FIELDS.forEach((f, k) => o[f] = r[k + 1] ?? "");
+      if (!TYPES.includes(o.type)) o.type = "Other";
+      if (!PRIORITIES.includes(o.priority)) o.priority = "Medium";
+      o.weight = Math.min(100, Math.max(1, Math.round(+o.weight) || WEIGHT[o.priority]));
+      o.weightTyped = o.weight !== WEIGHT[o.priority];
+      if (!OVERRIDE.includes(o.canOverride)) o.canOverride = "Yes";
+      if (!YESNO.includes(o.explain)) o.explain = "No";
+      return o;
+    });
+    render(); setDirty(true); say(`Opened ${file.name}: ${rows.length} constraints. IDs were renumbered in order.`);
+  } catch (err) { say(String(err.message || err), true); }
+  finally { e.target.value = ""; }
+});
+
+// ---- browser storage
+$("save").addEventListener("click", () => {
+  try { localStorage.setItem(STORE, JSON.stringify(rows)); setDirty(false); say(`Saved ${rows.length} constraints in this browser.`); }
+  catch (e) { say("This browser blocked local storage. Use Export CSV instead.", true); }
+});
+$("load").addEventListener("click", () => {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(STORE)); } catch (e) {}
+  if (!Array.isArray(saved)) { say("Nothing saved in this browser yet.", true); return; }
+  if (dirty && !confirm("Replace the current table with the saved version? Unsaved changes will be lost.")) return;
+  rows = saved; render(); setDirty(false); say(`Loaded ${rows.length} constraints from this browser.`);
+});
+$("clear").addEventListener("click", () => {
+  if (!confirm("Clear all constraints? This empties the table and the copy saved in this browser.")) return;
+  rows = []; try { localStorage.removeItem(STORE); } catch (e) {}
+  render(); setDirty(false); say("Cleared.");
+});
+addEventListener("beforeunload", e => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+// ---- start: saved copy if there is one, otherwise the samples
+let hadSaved = false;
+try { const s = JSON.parse(localStorage.getItem(STORE)); if (Array.isArray(s)) { rows = s; hadSaved = true; } } catch (e) {}
+render();
+if (hadSaved) setDirty(false);
+else { dirty = false; $("state").textContent = "Sample rows, not saved yet"; }
+</script>
+</body>
+</html>
