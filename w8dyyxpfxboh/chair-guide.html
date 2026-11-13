@@ -113,7 +113,7 @@ a { color: var(--accent); }
       <tr><td><strong>Classrooms</strong><br><code>hyland_classrooms.xlsx</code></td><td>Room capacity, type and owning department. The editor uses it to check that each section fits its room.</td><td><a href="files/hyland_classrooms.xlsx" download>Download hyland_classrooms.xlsx</a></td><td><span class="tag given">provided</span> <span class="tag edit">add rooms by hand</span></td></tr>
       <tr><td><strong>Long-range rotation</strong><br><code>CoBE Long-Range</code>, your tab</td><td>Which courses run each term, and whether they are online, face-to-face or both. Read it, but don't change it.</td><td>College long-range file</td><td><span class="tag given">provided</span></td></tr>
       <tr><td><strong>Enrolment history</strong></td><td>Students per course in past terms, split into in-person and online. It is the basis for the section plan in step 2.</td><td>Already inside the <a href="section-planner.html" target="_blank" rel="noopener">Section Planner</a> for every CoBE department, updated each term</td><td><span class="tag given">provided</span></td></tr>
-      <tr><td><strong>Teaching loads</strong><br><code>teaching_loads_YYYY-YYYY.csv</code></td><td>How many sections each person teaches in Fall and in Spring, including releases and overloads.</td><td><a href="teaching-loads.html" target="_blank" rel="noopener">Teaching Loads page</a>, starting from your instructor list</td><td><span class="tag edit">edit by hand</span></td></tr>
+      <tr><td><strong>Teaching loads</strong><br><code>teaching_loads_YYYY-YYYY.csv</code></td><td>How many sections each person teaches in Fall and in Spring, including releases and overloads.</td><td><a href="teaching-loads.html" target="_blank" rel="noopener">Teaching Loads page</a> (chairs' password), starting from who taught your subject recently</td><td><span class="tag edit">edit by hand</span></td></tr>
       <tr><td><strong>Preferences survey</strong><br><code>.xlsx</code></td><td>Each instructor's preferred days and times, times they can't teach, and preferred courses.</td><td>Survey you send to faculty (see below)</td><td><span class="tag you">you run it</span></td></tr>
       <tr><td><strong>Soft constraints</strong><br><code>soft_constraints.csv</code></td><td>Department rules with a priority. Examples: "401, 402 and 442 should not overlap" or "no section of 341 before 9:30." Turn the survey answers into rules here too.</td><td><a href="soft-constraints.html" target="_blank" rel="noopener">Soft Constraints page</a></td><td><span class="tag edit">you write them</span></td></tr>
     </tbody>
@@ -123,14 +123,14 @@ a { color: var(--accent); }
   <p>Open <code>hyland_classrooms.xlsx</code> and add a row. Copy the format of the rows already there: room (written like <code>HH2317</code>), capacity, type and department assigned. The department column decides how the room is grouped in the editor: your rooms come first, shared rooms next, and every other room is marked "ask first." If you change the file while the editor is open, click <strong>Reload rooms…</strong> there.</p>
 
   <h3>Teaching loads</h3>
-  <p>The page is shared by every chair. Each chair's data stays in their own browser and in their own file, so nobody sees another department's loads.</p>
+  <p>The page is shared by every chair and needs the chairs' password. The loads you type stay in your browser and in your own file, so nobody sees another department's loads.</p>
   <ol>
-    <li>You will receive <code>teaching_loads_starter_&lt;DEPT&gt;.csv</code>, your instructor list taken from your AY Memo.</li>
-    <li>Open the <a href="teaching-loads.html" target="_blank" rel="noopener">Teaching Loads page</a> and click <strong>Open saved file…</strong>. Choose the starter file. Your instructors replace the sample list.</li>
-    <li>Set each person's position (tenure track 3-3, lecturer 4-4, and so on). Type any change to the Fall or Spring load and pick a reason. Use <strong>Add</strong> for new hires.</li>
-    <li>Click <strong>Save file (.csv)</strong>. Move <code>teaching_loads_YYYY-YYYY.csv</code> from Downloads into your year folder.</li>
+    <li>Open the <a href="teaching-loads.html" target="_blank" rel="noopener">Teaching Loads page</a> and <strong>choose your department</strong> at the top.</li>
+    <li>The list starts with everyone who taught your subject in the last three Fall/Spring terms. The <strong>Recent</strong> column shows how many sections each person taught in each term, in any subject. Hover over it to see the sections. Remove people who are leaving or were one-off adjuncts, and use <strong>Add</strong> for new hires.</li>
+    <li>Set each person's position (tenure track 3-3, lecturer 4-4, and so on). Type any change to the Fall or Spring load and pick a reason.</li>
+    <li>Click <strong>Save file (.csv)</strong>. Move <code>teaching_loads_&lt;DEPT&gt;_YYYY-YYYY.csv</code> from Downloads into your year folder.</li>
   </ol>
-  <p>The draft is also kept in that browser. Next time, use <strong>Open saved file…</strong> with the saved file. Don't use <strong>Start over</strong>: it reloads the sample list.</p>
+  <p>Next time, use <strong>Open saved file…</strong> with your saved file. <strong>Start over</strong> clears your entries and reloads your department's list.</p>
 
   <h3>Soft constraints</h3>
   <p>Open the <a href="soft-constraints.html" target="_blank" rel="noopener">Soft Constraints page</a>. The rows already there are examples from another department, so click <strong>Clear all</strong> first. Then add one row per rule, with a priority (High, Medium or Low). Rules can come from the survey ("Prof. X can't teach Fridays") or from your programs ("courses in the same emphasis must not overlap"). Click <strong>Export CSV</strong> and save <code>soft_constraints.csv</code> in your year folder. To edit it later, use <strong>Open CSV…</strong>.</p>
