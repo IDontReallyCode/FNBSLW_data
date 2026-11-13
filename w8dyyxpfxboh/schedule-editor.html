@@ -661,6 +661,10 @@ function dropInstr(id, instructor, slot) {
     if (occ.length === 1) { const o = occ[0]; setSlot(o, old); o.instructor = old.instructor; }
   });
 }
+// drop in an instructor's "Online / no time" cell: reassign; a timed section loses its day/time and room
+function dropInstrNoTime(id, instructor) {
+  apply(() => { const c = byId(id); c.instructor = instructor; if (timed(c)) { setSlot(c, { days: "", start: null, end: null }); c.room = ""; } });
+}
 function dropTray(id) {
   apply(() => { const c = byId(id); setSlot(c, { days: "", start: null, end: null }); c.room = ""; });
 }
@@ -685,13 +689,15 @@ function cardHtml(s, R) {
     <span class="who">${esc(lastName(s.instructor) || "TBD")}</span><span class="meta">${esc(capTxt)}${s.session && !/full/i.test(s.session) ? " · " + esc(s.session) : ""}</span></div>`;
 }
 function gridHtml(rowsDef, cols, cellSecs, R, kind) {
-  const head = `<tr><th class="rowh corner">${kind === "room" ? "Room" : "Instructor"}</th>${cols.map(c => `<th class="${c.preset ? "" : "extra"}">${esc(c.days)}<small>${esc(fmtRange(c.start, c.end))}</small></th>`).join("")}</tr>`;
+  const head = `<tr><th class="rowh corner">${kind === "room" ? "Room" : "Instructor"}</th>${cols.map(c => c.none
+    ? `<th class="extra">Online / no time<small>drop here: no day/time</small></th>`
+    : `<th class="${c.preset ? "" : "extra"}">${esc(c.days)}<small>${esc(fmtRange(c.start, c.end))}</small></th>`).join("")}</tr>`;
   let body = "";
   for (const row of rowsDef) {
     if (row.groupHead) { body += `<tr class="grp-head"><th colspan="${cols.length + 1}">${row.groupHead}</th></tr>`; continue; }
     body += `<tr class="${row.cls || ""}"><th class="rowh" title="${esc(row.tip || "")}">${row.html}</th>${cols.map(c => {
       const list = cellSecs(row.key, c);
-      return `<td class="cell ${list.length ? "" : "free"}" data-row="${esc(row.key)}" data-slot="${esc(c.days)}|${c.start}|${c.end}">${list.map(s => cardHtml(s, R)).join("")}</td>`;
+      return `<td class="cell ${list.length ? "" : "free"}" data-row="${esc(row.key)}" data-slot="${c.none ? "none" : `${esc(c.days)}|${c.start}|${c.end}`}">${list.map(s => cardHtml(s, R)).join("")}</td>`;
     }).join("")}</tr>`;
   }
   return `<div class="panel gridwrap"><table class="grid"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
@@ -731,7 +737,7 @@ function renderRooms(term, R) {
     ${trayHtml(term, R)}`;
 }
 function renderInstructors(term, R) {
-  const cols = columnsFor(term), secs = S.sections.filter(s => s.term === term);
+  const cols = [{ none: true }].concat(columnsFor(term)), secs = S.sections.filter(s => s.term === term);
   const people = new Map();
   for (const s of secs) { const k = resolveKey(s.instructor) || "tbd:" + (s.instructor || ""); if (!people.has(k)) people.set(k, { key: k, name: s.instructor || "(no instructor)", list: [] }); people.get(k).list.push(s); }
   if (S.loads) for (const [k, L] of Object.entries(S.loads)) if (!people.has(k)) people.set(k, { key: k, name: L.name, list: [] });
@@ -743,9 +749,10 @@ function renderInstructors(term, R) {
     return { key: p.key, html: `${esc(p.name)}<small style="color:${col}">${n} section${n === 1 ? "" : "s"}${want != null ? ` / load ${want}` : ""}</small>` };
   });
   const rowOf = s => resolveKey(s.instructor) || "tbd:" + (s.instructor || "");
-  const cellSecs = (key, c) => secs.filter(s => rowOf(s) === key && timed(s) && s.days === c.days && s.start === c.start && s.end === c.end);
-  return `<div class="gridopts"><span class="legend">Drag within a row to change the time; to another row to reassign it (swaps with a card already there). Rooms don't change here.</span></div>
-    ${gridHtml(rowsDef, cols, cellSecs, R, "instr")}${trayHtml(term, R)}`;
+  const cellSecs = (key, c) => secs.filter(s => rowOf(s) === key && (c.none ? !timed(s) : timed(s) && s.days === c.days && s.start === c.start && s.end === c.end));
+  return `<div class="gridopts"><span class="legend">Drag within a row to change the time; to another row to reassign it (swaps with a card already there in a time cell).
+    The first column holds online / independent study / no-time sections: drag them between people to reassign. Rooms don't change here.</span></div>
+    ${gridHtml(rowsDef, cols, cellSecs, R, "instr")}`;
 }
 function renderTable(term, R) {
   const list = S.sections.filter(s => s.term === term);
@@ -813,10 +820,14 @@ document.addEventListener("drop", e => {
   const id = dragId || e.dataTransfer.getData("text/plain"); const cell = e.target.closest?.("td.cell"), tray = e.target.closest?.("#tray");
   document.querySelectorAll(".over").forEach(x => x.classList.remove("over")); if (!id) return;
   if (cell) {
-    e.preventDefault(); const [days, a, b] = cell.dataset.slot.split("|"), slot = { days, start: +a, end: +b };
-    if (S.view === "rooms") dropRoom(id, cell.dataset.row, slot);
-    else { const k = cell.dataset.row, cur = byId(id), same = (resolveKey(cur.instructor) || "tbd:" + (cur.instructor || "")) === k;
-      dropInstr(id, same ? cur.instructor : (state.instrNames.get(k) ?? ""), slot); }
+    e.preventDefault();
+    if (S.view === "rooms") { const [days, a, b] = cell.dataset.slot.split("|"); dropRoom(id, cell.dataset.row, { days, start: +a, end: +b }); }
+    else {
+      const k = cell.dataset.row, cur = byId(id), same = (resolveKey(cur.instructor) || "tbd:" + (cur.instructor || "")) === k;
+      const who = same ? cur.instructor : (state.instrNames.get(k) ?? "");
+      if (cell.dataset.slot === "none") dropInstrNoTime(id, who);
+      else { const [days, a, b] = cell.dataset.slot.split("|"); dropInstr(id, who, { days, start: +a, end: +b }); }
+    }
   } else if (tray) { e.preventDefault(); dropTray(id); }
 });
 
@@ -858,8 +869,16 @@ function openDialog(s, isNew) {
   $("dflags").textContent = (v.flags || []).length ? "Import notes: " + v.flags.join(" ") + " (saving clears these notes)" : "";
   $("dlg-title").textContent = s && !isNew ? `${label(s)} · ${s.term}` : "New section";
   $("d-del").hidden = $("d-dup").hidden = !s || isNew;
+  syncModality();
   $("dlg").showModal();
 }
+// online / independent study: no room (days and times stay optional, e.g. a synchronous online class)
+function syncModality() {
+  const f = $("dform"), off = f.modality.value === "Online" || f.modality.value === "IS";
+  f.room.disabled = off; if (off) f.room.value = "";
+  f.room.placeholder = off ? "no room (online / IS)" : "HH1311";
+}
+$("dform").modality.addEventListener("change", syncModality);
 $("presets").addEventListener("click", e => { const b = e.target.closest("[data-p]"); if (!b) return; const [d, a, c] = b.dataset.p.split("|"), f = $("dform"); f.days.value = d; f.start.value = hhmm(a === "" ? null : +a); f.end.value = hhmm(c === "" ? null : +c); });
 $("d-cancel").onclick = () => $("dlg").close();
 $("dform").addEventListener("submit", e => {
@@ -868,6 +887,7 @@ $("dform").addEventListener("submit", e => {
     credits: num(f.credits.value), session: f.session.value.trim() || "Full Term", modality: f.modality.value, cap: num(f.cap.value), days: normDays(f.days.value),
     start: parseHHMM(f.start.value), end: parseHHMM(f.end.value), room: normRoom(f.room.value).room, instructor: f.instructor.value.trim(), note: f.note.value.trim(), flags: [] };
   if (!vals.days) { vals.start = vals.end = null; }
+  if (vals.modality === "Online" || vals.modality === "IS") vals.room = "";
   if (!vals.course) { alert("Course is required."); return; }
   $("dlg").close();
   apply(() => { if (editing.isNew || !editing.id) S.sections.push({ id: uid(), termCode: "", ...vals }); else Object.assign(byId(editing.id), vals); });

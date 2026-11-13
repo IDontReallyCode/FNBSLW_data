@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scheduling Guide for Chairs</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f5f9; --surface: #ffffff; --text: #1d1b22; --muted: #5f5b6b; --faint: #8b8697; --line: #e3e0ea;
+  --accent: #4b2e83; --accent-soft: #ece6f6;
+  --warn: #c2410c; --warn-soft: #fdeee6; --info: #2563b8; --info-soft: #e8f0fb; --ok: #1b6e2a; --ok-soft: #e7f4ea;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #141317; --surface: #1d1b22; --text: #ece9f2; --muted: #a7a1b4; --faint: #7d7889; --line: #34303e;
+    --accent: #b9a3e8; --accent-soft: #2c2540;
+    --warn: #fb923c; --warn-soft: #3a2418; --info: #7fb0f0; --info-soft: #1c2638; --ok: #7fd18f; --ok-soft: #1b2c1f;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #141317; --surface: #1d1b22; --text: #ece9f2; --muted: #a7a1b4; --faint: #7d7889; --line: #34303e;
+  --accent: #b9a3e8; --accent-soft: #2c2540;
+  --warn: #fb923c; --warn-soft: #3a2418; --info: #7fb0f0; --info-soft: #1c2638; --ok: #7fd18f; --ok-soft: #1b2c1f;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 "Segoe UI", system-ui, -apple-system, sans-serif; }
+.wrap { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { margin: 0 0 6px; font-size: 26px; color: var(--accent); }
+h2 { font-size: 20px; margin: 0 0 8px; display: flex; gap: 10px; align-items: baseline; }
+h3 { font-size: 15px; margin: 18px 0 6px; }
+.lede { color: var(--muted); margin: 0 0 20px; max-width: 720px; }
+.num { flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: var(--surface); font-size: 14px; font-weight: 700; }
+section.step { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 0 0 14px; }
+.who { font-size: 13px; color: var(--muted); margin: -4px 0 10px 38px; }
+nav.toc { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 20px; margin: 0 0 18px; }
+nav.toc ol { margin: 4px 0; padding-left: 22px; columns: 2; column-gap: 32px; }
+nav.toc a { color: var(--accent); text-decoration: none; } nav.toc a:hover { text-decoration: underline; }
+.flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; margin: 0 0 18px; }
+.flow span { background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 3px 10px; font-weight: 600; }
+.flow i { color: var(--faint); font-style: normal; }
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--line); }
+th { font-size: 12px; color: var(--muted); font-weight: 600; }
+code { font: 13px Consolas, "Cascadia Mono", monospace; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+.tag { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+.tag.given { background: var(--ok-soft); color: var(--ok); }
+.tag.you { background: var(--info-soft); color: var(--info); }
+.tag.edit { background: var(--warn-soft); color: var(--warn); }
+.note { border-left: 4px solid var(--info); background: var(--info-soft); padding: 8px 12px; border-radius: 6px; margin: 10px 0; }
+.note.warn { border-color: var(--warn); background: var(--warn-soft); }
+.prompt { position: relative; margin: 8px 0; }
+.prompt pre { white-space: pre-wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 0;
+  font: 13px/1.5 Consolas, "Cascadia Mono", monospace; }
+.prompt button { position: absolute; top: 8px; right: 8px; font: 12px inherit; background: var(--surface); color: var(--text);
+  border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; cursor: pointer; }
+.prompt button:hover { border-color: var(--accent); }
+ul.check { list-style: none; padding-left: 0; } ul.check li { padding-left: 24px; position: relative; margin: 3px 0; }
+ul.check li::before { content: "☐"; position: absolute; left: 2px; color: var(--accent); }
+a { color: var(--accent); }
+@media (max-width: 640px) { nav.toc ol { columns: 1; } .who { margin-left: 0; } section.step { padding: 14px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Building a department schedule</h1>
+  <p class="lede">This guide takes a chair from raw files to a finished AY Memo. An AI tool writes the first draft. You fix it in the Schedule Editor, an AI checks your preferences, and you export the result. Plan on two to three working sessions.</p>
+</header>
+
+<div class="flow" aria-label="Workflow">
+  <span>1 Gather files</span><i>→</i><span>2 Plan sections</span><i>→</i><span>3 AI draft</span><i>→</i><span>4 Edit &amp; fix</span><i>→</i><span>5 AI audit</span><i>→</i><span>6 Faculty review</span><i>→</i><span>7 Export AY Memo</span>
+</div>
+
+<nav class="toc" aria-label="Contents">
+  <strong>Steps</strong>
+  <ol>
+    <li><a href="#s0">Before you start</a></li>
+    <li><a href="#s1">Gather the input files</a></li>
+    <li><a href="#s2">Decide how many sections</a></li>
+    <li><a href="#s3">Get an AI draft</a></li>
+    <li><a href="#s4">Fix it in the Schedule Editor</a></li>
+    <li><a href="#s5">Ask AI to audit the soft rules</a></li>
+    <li><a href="#s6">Faculty review</a></li>
+    <li><a href="#s7">Export the new AY Memo</a></li>
+  </ol>
+</nav>
+
+<section class="step" id="s0">
+  <h2><span class="num">0</span>Before you start</h2>
+  <ul class="check">
+    <li>Create one folder for the year, for example <code>SCHEDULING/2027-2028/</code>. Keep every file for that year in it.</li>
+    <li>Check the AY Memo due date on the <em>Schedule of Classes Calendar of Deadlines</em>. Work backward from it, and leave a week for faculty review.</li>
+    <li>Use a <strong>campus-approved AI tool</strong> (for example BoodleBox). Survey answers, names and loads are internal information. Do not paste them into a personal AI account.</li>
+    <li>Use Chrome or Edge on a computer with a mouse. Dragging cards in the editor does not work on touch screens.</li>
+  </ul>
+</section>
+
+<section class="step" id="s1">
+  <h2><span class="num">1</span>Gather the input files</h2>
+  <p class="who">Some files are provided. You prepare or edit the rest.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>File</th><th>What it gives the schedule</th><th>Source</th><th></th></tr></thead>
+    <tbody>
+      <tr><td><strong>Last year's AY Memo</strong><br><code>.xlsx</code></td><td>The starting pattern: who teaches what, when and where. Faculty expect to keep their usual slots, so the AI should change as little as it can.</td><td>Your department's copy</td><td><span class="tag given">you have it</span></td></tr>
+      <tr><td><strong>Instructors</strong></td><td>The list of people who teach, with their names written exactly as in the AY Memo.</td><td>Taken from the AY Memo</td><td><span class="tag given">provided</span></td></tr>
+      <tr><td><strong>Classrooms</strong><br><code>hyland_classrooms.xlsx</code></td><td>Room capacity, type and owning department. The editor uses it to check that each section fits its room.</td><td>Provided for Hyland Hall</td><td><span class="tag given">provided</span> <span class="tag edit">add rooms by hand</span></td></tr>
+      <tr><td><strong>Long-range rotation</strong><br><code>CoBE Long-Range</code>, your tab</td><td>Which courses run each term, and whether they are online, face-to-face or both. Read it, but don't change it.</td><td>College long-range file</td><td><span class="tag given">provided</span></td></tr>
+      <tr><td><strong>Enrolment history</strong></td><td>Students per course and section in past terms. It is the basis for the section plan in step 2.</td><td>IRAP dashboard, one file per semester (see below)</td><td><span class="tag you">you download</span></td></tr>
+      <tr><td><strong>Teaching loads</strong><br><code>teaching_loads_YYYY-YYYY.csv</code></td><td>How many sections each person teaches in Fall and in Spring, including releases and overloads.</td><td>Teaching Loads page</td><td><span class="tag edit">edit by hand</span></td></tr>
+      <tr><td><strong>Preferences survey</strong></td><td>Each instructor's preferred days and times, times they can't teach, and preferred courses.</td><td>Survey you send to faculty</td><td><span class="tag you">you run it</span></td></tr>
+      <tr><td><strong>Soft constraints</strong><br><code>soft_constraints.csv</code></td><td>Department rules with a priority. Examples: "401, 402 and 442 should not overlap" or "no section of 341 before 9:30." Turn the survey answers into rules here too.</td><td>Soft Constraints page</td><td><span class="tag edit">you write them</span></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Adding a classroom</h3>
+  <p>Open <code>hyland_classrooms.xlsx</code> and add a row. Copy the format of the rows already there: room (written like <code>HH2317</code>), capacity, type and department assigned. The department column decides how the room is grouped in the editor: your rooms come first, shared rooms next, and every other room is marked "ask first." If you change the file while the editor is open, click <strong>Reload rooms…</strong> there.</p>
+
+  <h3>Downloading enrolment from IRAP</h3>
+  <div class="note">Detailed instructions are coming. In short: download the raw per-semester file for each past term, keep the original file names, and save them all in one folder.</div>
+
+  <h3>Running the survey</h3>
+  <p>Send it early, at least three weeks before your draft date. Ask for days and times people can't teach, preferred teaching days, courses they want to teach, and any special needs, such as a room type or back-to-back sections. Export the responses to <code>.xlsx</code>.</p>
+</section>
+
+<section class="step" id="s2">
+  <h2><span class="num">2</span>Decide how many sections</h2>
+  <p class="who">Turns enrolment into a number of in-person and online sections per course.</p>
+  <p>In the <strong>Section Planner</strong>, each course shows last year's sections and students, and a suggested number of sections at a target size, for Fall and Spring separately. Change the numbers wherever you know better: a new hire, a course moving online, or a rotation change in the long-range file. Save the result as <code>section_plan_YYYY-YYYY.csv</code>.</p>
+  <div class="note warn">For a fall term that hasn't reached census yet, the IRAP numbers are low. Base the plan on the previous fall instead.</div>
+</section>
+
+<section class="step" id="s3">
+  <h2><span class="num">3</span>Get an AI draft</h2>
+  <p class="who">The AI writes a first schedule in a fixed format that the editor can read.</p>
+  <ol>
+    <li>Open the <strong>Schedule Editor</strong> and click <strong>Draft format for AI</strong>. It downloads a file listing the required columns and rules.</li>
+    <li>In your AI tool, upload that file together with last year's AY Memo, the rooms file, the long-range tab, the section plan, teaching loads, soft constraints and the survey responses.</li>
+    <li>Paste the prompt below. Ask for the output as an <code>.xlsx</code> or <code>.csv</code> file.</li>
+  </ol>
+  <div class="prompt"><button type="button" data-copy="p1">Copy</button><pre id="p1">You are drafting next year's course schedule for my department.
+
+Files attached:
+- Draft format: the exact columns and rules your output must follow. Follow it strictly.
+- Last year's AY Memo: start from this pattern. Keep instructors in their usual days, times and rooms unless a rule below forces a change.
+- Long-range rotation: offer only the courses listed for each term, in the modality listed.
+- Section plan: the number of in-person and online sections per course per term.
+- Teaching loads: the number of sections each instructor teaches in Fall and in Spring. Match these exactly.
+- Rooms: use only these rooms, and never put a section in a room smaller than its cap. Prefer rooms owned by my department.
+- Soft constraints and survey: respect them in priority order (High, then Medium, then Low).
+
+Hard rules: no instructor or room double-booked; every in-person section has days, a time and a room; online sections have no room or time.
+
+Output: one file in the draft format, one row per section. Then give a short list of every soft constraint or preference you could NOT meet, and why.</pre></div>
+  <p>The AI's draft will have mistakes. Step 4 catches them.</p>
+</section>
+
+<section class="step" id="s4">
+  <h2><span class="num">4</span>Fix it in the Schedule Editor</h2>
+  <p class="who">Here you clear every hard error. The checks run live as you edit.</p>
+  <ol>
+    <li><strong>Open files…</strong> and select them all at once: the AI draft, <code>hyland_classrooms.xlsx</code>, the teaching loads, the section plan and the soft constraints. The editor recognises each file from its columns.</li>
+    <li>Work through the <strong>Checks</strong> panel until there are <strong>no red errors</strong>: room clashes, instructor clashes, sections larger than their room, and in-person sections missing a time or room. Click a check to jump to the card.</li>
+    <li>Then review the warnings: loads, section counts, and expected size per section.</li>
+    <li>Verify the schedule from both sides:
+      <ul>
+        <li><strong>Room view</strong>: is every room full but not double-booked, and are your own rooms used first?</li>
+        <li><strong>Instructor view</strong>: does each person's week make sense, with no clashes, the right load and a reasonable spread? Online sections sit in the "Online / no time" column. Drag one to another row to reassign it.</li>
+      </ul></li>
+    <li>To move a card, drag it to an empty cell. Dropping it onto another card swaps the two. Click a card to edit it. Use Ctrl+Z to undo.</li>
+    <li>Click <strong>Save schedule (.csv)</strong> often. This file is your working copy. The browser also keeps a draft, but it's only a backup.</li>
+  </ol>
+</section>
+
+<section class="step" id="s5">
+  <h2><span class="num">5</span>Ask AI to audit the soft rules</h2>
+  <p class="who">The AI checks the schedule and lists changes. It does not edit anything. You decide and make the changes.</p>
+  <ol>
+    <li>In the editor, click <strong>Export for AI audit (.xlsx)</strong>. The file contains the schedule, your change log and the remaining warnings.</li>
+    <li>Upload it to the AI tool with the soft constraints and survey responses, then paste the prompt below.</li>
+    <li>Make the changes you agree with in the editor. Check that no red errors came back. Save.</li>
+    <li>If you made many changes, run the audit again.</li>
+  </ol>
+  <div class="prompt"><button type="button" data-copy="p2">Copy</button><pre id="p2">Audit this course schedule. Do NOT rewrite or return the schedule.
+
+Attached: the schedule (with a change log and a list of remaining warnings), our soft constraints with priorities, and the faculty preference survey.
+
+1. List every soft constraint and survey preference that the schedule breaks, highest priority first. For each one, give the constraint ID or the person, the sections involved, and why it is broken.
+2. For each problem, suggest the smallest change that fixes it, for example "move FNBSLW 341-02 from TR 8:00 to TR 9:30 in the same room." Check that your change does not create a room or instructor clash or exceed a room's capacity.
+3. Say which problems can't be fixed without breaking something more important.
+4. End with a numbered to-do list of the changes I should make, in order.</pre></div>
+</section>
+
+<section class="step" id="s6">
+  <h2><span class="num">6</span>Faculty review</h2>
+  <p>Send each instructor their sections, or share the instructor view, and give a short deadline. Make the corrections in the editor and save. This catches problems the survey missed, before the schedule is official.</p>
+</section>
+
+<section class="step" id="s7">
+  <h2><span class="num">7</span>Export the new AY Memo</h2>
+  <ol>
+    <li>Click <strong>Export AY Memo columns (.xlsx)</strong>. It creates one sheet per term with the AY Memo columns.</li>
+    <li>Paste each sheet into the official AY Memo template for the new year.</li>
+    <li>Do a last check against the long-range rotation. Every course listed for each term should be in the schedule, in the listed modality.</li>
+    <li>Submit before the deadline. Keep the final <code>schedule_YYYY-YYYY.csv</code> in the year folder. It becomes "last year's AY Memo" for next year.</li>
+  </ol>
+</section>
+</div>
+<script>
+document.querySelectorAll("[data-copy]").forEach(b => b.addEventListener("click", async () => {
+  const t = document.getElementById(b.dataset.copy).textContent;
+  try { await navigator.clipboard.writeText(t); b.textContent = "Copied"; }
+  catch (e) { b.textContent = "Select and copy"; }
+  setTimeout(() => b.textContent = "Copy", 1500);
+}));
+</script>
+</body>
+</html>
