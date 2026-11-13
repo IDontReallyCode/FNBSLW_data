@@ -95,8 +95,8 @@ a { color: var(--accent); }
   <h2><span class="num">0</span>Before you start</h2>
   <ul class="check">
     <li>Create one folder for the year, for example <code>SCHEDULING/2027-2028/</code>. Keep every file for that year in it.</li>
-    <li>Check the AY Memo due date on the <em>Schedule of Classes Calendar of Deadlines</em>. Work backward from it, and leave a week for faculty review.</li>
-    <li>Use a <strong>campus-approved AI tool</strong> (for example BoodleBox). Survey answers, names and loads are internal information. Do not paste them into a personal AI account.</li>
+    <li><strong>Start early.</strong> The survey needs time to come back, the AI draft always needs fixing, and faculty need time to review. Don't wait for the deadline to get close.</li>
+    <li>Use a <strong>campus-approved AI tool</strong>. Survey answers, names and loads are internal information. Do not paste them into a personal AI account.</li>
     <li>Use Chrome or Edge on a computer with a mouse. Dragging cards in the editor does not work on touch screens.</li>
   </ul>
 </section>
@@ -109,23 +109,43 @@ a { color: var(--accent); }
     <tbody>
       <tr><td><strong>Last year's AY Memo</strong><br><code>.xlsx</code></td><td>The starting pattern: who teaches what, when and where. Faculty expect to keep their usual slots, so the AI should change as little as it can.</td><td>Your department's copy</td><td><span class="tag given">you have it</span></td></tr>
       <tr><td><strong>Instructors</strong></td><td>The list of people who teach, with their names written exactly as in the AY Memo.</td><td>Taken from the AY Memo</td><td><span class="tag given">provided</span></td></tr>
-      <tr><td><strong>Classrooms</strong><br><code>hyland_classrooms.xlsx</code></td><td>Room capacity, type and owning department. The editor uses it to check that each section fits its room.</td><td>Provided for Hyland Hall</td><td><span class="tag given">provided</span> <span class="tag edit">add rooms by hand</span></td></tr>
+      <tr><td><strong>Classrooms</strong><br><code>hyland_classrooms.xlsx</code></td><td>Room capacity, type and owning department. The editor uses it to check that each section fits its room.</td><td><a href="files/hyland_classrooms.xlsx" download>Download hyland_classrooms.xlsx</a></td><td><span class="tag given">provided</span> <span class="tag edit">add rooms by hand</span></td></tr>
       <tr><td><strong>Long-range rotation</strong><br><code>CoBE Long-Range</code>, your tab</td><td>Which courses run each term, and whether they are online, face-to-face or both. Read it, but don't change it.</td><td>College long-range file</td><td><span class="tag given">provided</span></td></tr>
       <tr><td><strong>Enrolment history</strong></td><td>Students per course and section in past terms. It is the basis for the section plan in step 2.</td><td>IRAP dashboard, one file per semester (see below)</td><td><span class="tag you">you download</span></td></tr>
-      <tr><td><strong>Teaching loads</strong><br><code>teaching_loads_YYYY-YYYY.csv</code></td><td>How many sections each person teaches in Fall and in Spring, including releases and overloads.</td><td>Teaching Loads page</td><td><span class="tag edit">edit by hand</span></td></tr>
-      <tr><td><strong>Preferences survey</strong></td><td>Each instructor's preferred days and times, times they can't teach, and preferred courses.</td><td>Survey you send to faculty</td><td><span class="tag you">you run it</span></td></tr>
-      <tr><td><strong>Soft constraints</strong><br><code>soft_constraints.csv</code></td><td>Department rules with a priority. Examples: "401, 402 and 442 should not overlap" or "no section of 341 before 9:30." Turn the survey answers into rules here too.</td><td>Soft Constraints page</td><td><span class="tag edit">you write them</span></td></tr>
+      <tr><td><strong>Teaching loads</strong><br><code>teaching_loads_YYYY-YYYY.csv</code></td><td>How many sections each person teaches in Fall and in Spring, including releases and overloads.</td><td><a href="teaching-loads.html" target="_blank" rel="noopener">Teaching Loads page</a>, starting from your instructor list</td><td><span class="tag edit">edit by hand</span></td></tr>
+      <tr><td><strong>Preferences survey</strong><br><code>.xlsx</code></td><td>Each instructor's preferred days and times, times they can't teach, and preferred courses.</td><td>Survey you send to faculty (see below)</td><td><span class="tag you">you run it</span></td></tr>
+      <tr><td><strong>Soft constraints</strong><br><code>soft_constraints.csv</code></td><td>Department rules with a priority. Examples: "401, 402 and 442 should not overlap" or "no section of 341 before 9:30." Turn the survey answers into rules here too.</td><td><a href="soft-constraints.html" target="_blank" rel="noopener">Soft Constraints page</a></td><td><span class="tag edit">you write them</span></td></tr>
     </tbody>
   </table></div>
 
   <h3>Adding a classroom</h3>
   <p>Open <code>hyland_classrooms.xlsx</code> and add a row. Copy the format of the rows already there: room (written like <code>HH2317</code>), capacity, type and department assigned. The department column decides how the room is grouped in the editor: your rooms come first, shared rooms next, and every other room is marked "ask first." If you change the file while the editor is open, click <strong>Reload rooms…</strong> there.</p>
 
+  <h3>Teaching loads</h3>
+  <p>The page is shared by every chair. Each chair's data stays in their own browser and in their own file, so nobody sees another department's loads.</p>
+  <ol>
+    <li>You will receive <code>teaching_loads_starter_&lt;DEPT&gt;.csv</code>, your instructor list taken from your AY Memo.</li>
+    <li>Open the <a href="teaching-loads.html" target="_blank" rel="noopener">Teaching Loads page</a> and click <strong>Open saved file…</strong>. Choose the starter file. Your instructors replace the sample list.</li>
+    <li>Set each person's position (tenure track 3-3, lecturer 4-4, and so on). Type any change to the Fall or Spring load and pick a reason. Use <strong>Add</strong> for new hires.</li>
+    <li>Click <strong>Save file (.csv)</strong>. Move <code>teaching_loads_YYYY-YYYY.csv</code> from Downloads into your year folder.</li>
+  </ol>
+  <p>The draft is also kept in that browser. Next time, use <strong>Open saved file…</strong> with the saved file. Don't use <strong>Start over</strong>: it reloads the sample list.</p>
+
+  <h3>Soft constraints</h3>
+  <p>Open the <a href="soft-constraints.html" target="_blank" rel="noopener">Soft Constraints page</a>. The rows already there are examples from another department, so click <strong>Clear all</strong> first. Then add one row per rule, with a priority (High, Medium or Low). Rules can come from the survey ("Prof. X can't teach Fridays") or from your programs ("courses in the same emphasis must not overlap"). Click <strong>Export CSV</strong> and save <code>soft_constraints.csv</code> in your year folder. To edit it later, use <strong>Open CSV…</strong>.</p>
+
   <h3>Downloading enrolment from IRAP</h3>
   <div class="note">Detailed instructions are coming. In short: download the raw per-semester file for each past term, keep the original file names, and save them all in one folder.</div>
 
   <h3>Running the survey</h3>
-  <p>Send it early, at least three weeks before your draft date. Ask for days and times people can't teach, preferred teaching days, courses they want to teach, and any special needs, such as a room type or back-to-back sections. Export the responses to <code>.xlsx</code>.</p>
+  <p>Send it early, at least three weeks before your draft date. Ask for days and times people can't teach, preferred teaching days, courses they want to teach, and any special needs, such as a room type or back-to-back sections.</p>
+  <p><strong>Saving the responses in Excel</strong> (after the survey closes):</p>
+  <ul>
+    <li><strong>Microsoft Forms:</strong> open the form, go to the <strong>Responses</strong> tab and click <strong>Open results in Excel</strong>. In Excel choose <strong>File › Save a copy</strong> and save it in your year folder.</li>
+    <li><strong>Google Forms:</strong> go to the <strong>Responses</strong> tab and click <strong>Link to Sheets</strong>. In the sheet choose <strong>File › Download › Microsoft Excel (.xlsx)</strong>, then move the file from Downloads into your year folder.</li>
+    <li><strong>Qualtrics:</strong> go to <strong>Data &amp; Analysis › Export &amp; Import › Export data</strong>, choose <strong>Excel</strong>, and keep "Use choice text" selected.</li>
+  </ul>
+  <p>Name it <code>survey_responses_YYYY-YYYY.xlsx</code>. Keep one row per instructor, and check that names are spelled the same way as in your AY Memo.</p>
 </section>
 
 <section class="step" id="s2">

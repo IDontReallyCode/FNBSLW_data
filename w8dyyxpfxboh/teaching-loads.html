@@ -124,7 +124,9 @@ const dflt = p => (p.position && S.defaults[p.position]) || [null, null];
 const eff = (p, i) => { const v = i ? p.spring : p.fall; return v != null ? v : dflt(p)[i]; };
 const differs = p => p.position && [0, 1].some(i => { const d = dflt(p)[i]; return d != null && eff(p, i) != null && eff(p, i) !== d; });
 const missing = p => !p.position || eff(p, 0) == null || eff(p, 1) == null;
-const recentOf = name => {
+const ownList = () => BAKED && !S.people.some(p => p.name && recentOf0(p.name)); // opened another department's list
+const recentOf = name => ownList() ? null : recentOf0(name);
+const recentOf0 = name => {
   if (!BAKED) return null;
   const k = n => (n.split(/\s+/)[0] + " " + lastName(n)).toLowerCase();
   return BAKED.recent[Object.keys(BAKED.recent).find(n => k(n) === k(name))] || null;
@@ -168,7 +170,7 @@ function renderSum() {
   const [fl, sp] = semesters();
   const f = S.people.reduce((t, p) => t + (eff(p, 0) ?? 0), 0), s = S.people.reduce((t, p) => t + (eff(p, 1) ?? 0), 0);
   const miss = S.people.filter(missing).length, noReason = S.people.filter(p => differs(p) && !p.reason).length;
-  const ref = BAKED ? BAKED.offered : {};
+  const ref = BAKED && !ownList() ? BAKED.offered : {};
   $("sum").innerHTML = `
     <div><b>${f}</b><small>sections covered, ${esc(fl)}</small></div>
     <div><b>${s}</b><small>sections covered, ${esc(sp)}</small></div>
@@ -244,16 +246,17 @@ $("open").addEventListener("change", async e => {
   try {
     const rows = parseCSV((await file.text()).replace(/^﻿/, ""));
     const h = rows[0].map(x => x.trim().toLowerCase()), ix = c => h.indexOf(c);
-    if (ix("name") < 0 || ix("fall_load") < 0) throw new Error("This doesn't look like a saved Teaching Loads file.");
+    if (ix("name") < 0) throw new Error("This file needs a column called name (one instructor per row).");
     const num = v => v == null || v.trim() === "" ? null : +v;
+    const col = (r, c) => ix(c) >= 0 ? r[ix(c)] : "";
     const next = fresh();
-    next.year = rows[1]?.[ix("academic_year")] || next.year;
-    next.people = rows.slice(1).map(r => {
-      const pos = r[ix("position")] || "";
-      if (POSITIONS.includes(pos) && ix("default_fall") >= 0 && pos !== "Manual")
-        next.defaults[pos] = [num(r[ix("default_fall")]), num(r[ix("default_spring")])];
-      return { name: r[ix("name")], position: POSITIONS.includes(pos) ? pos : "", fall: num(r[ix("fall_load")]), spring: num(r[ix("spring_load")]),
-        reason: r[ix("reason")] || "", note: r[ix("note")] || "" };
+    next.year = (rows[1] && col(rows[1], "academic_year")) || next.year;
+    next.people = rows.slice(1).filter(r => (r[ix("name")] || "").trim()).map(r => {
+      const pos = col(r, "position") || "";
+      if (POSITIONS.includes(pos) && ix("default_fall") >= 0 && pos !== "Manual" && col(r, "default_fall") !== "")
+        next.defaults[pos] = [num(col(r, "default_fall")), num(col(r, "default_spring"))];
+      return { name: r[ix("name")].trim(), position: POSITIONS.includes(pos) ? pos : "", fall: num(col(r, "fall_load")), spring: num(col(r, "spring_load")),
+        reason: col(r, "reason") || "", note: col(r, "note") || "" };
     });
     S = next;
     for (const p of S.people) for (const [i, f] of [[0, "fall"], [1, "spring"]]) if (p[f] != null && p[f] === dflt(p)[i]) p[f] = null;
