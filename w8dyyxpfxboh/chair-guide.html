@@ -99,6 +99,7 @@ a { color: var(--accent); }
     <li>Use a <strong>campus-approved AI tool</strong>. Survey answers, names and loads are internal information. Do not paste them into a personal AI account.</li>
     <li>Use Chrome or Edge on a computer with a mouse. Dragging cards in the editor does not work on touch screens.</li>
   </ul>
+  <div class="note warn"><strong>Your work stays in your browser, so save the file yourself.</strong> The pages keep a draft in this browser on this computer. Nothing goes to a server, and nobody else can see it. That draft is not shared with your other computers or browsers, and it disappears if browsing data is cleared or you use a private window. Every page has a <strong>Save file</strong> button. Use it often and move the file from Downloads into your year folder. <strong>The saved file is your real copy.</strong> Open it again with <strong>Open saved file…</strong> on any computer.</div>
 </section>
 
 <section class="step" id="s1">
@@ -111,7 +112,7 @@ a { color: var(--accent); }
       <tr><td><strong>Instructors</strong></td><td>The list of people who teach, with their names written exactly as in the AY Memo.</td><td>Taken from the AY Memo</td><td><span class="tag given">provided</span></td></tr>
       <tr><td><strong>Classrooms</strong><br><code>hyland_classrooms.xlsx</code></td><td>Room capacity, type and owning department. The editor uses it to check that each section fits its room.</td><td><a href="files/hyland_classrooms.xlsx" download>Download hyland_classrooms.xlsx</a></td><td><span class="tag given">provided</span> <span class="tag edit">add rooms by hand</span></td></tr>
       <tr><td><strong>Long-range rotation</strong><br><code>CoBE Long-Range</code>, your tab</td><td>Which courses run each term, and whether they are online, face-to-face or both. Read it, but don't change it.</td><td>College long-range file</td><td><span class="tag given">provided</span></td></tr>
-      <tr><td><strong>Enrolment history</strong></td><td>Students per course and section in past terms. It is the basis for the section plan in step 2.</td><td>IRAP dashboard, one file per semester (see below)</td><td><span class="tag you">you download</span></td></tr>
+      <tr><td><strong>Enrolment history</strong></td><td>Students per course in past terms, split into in-person and online. It is the basis for the section plan in step 2.</td><td>Already inside the <a href="section-planner.html" target="_blank" rel="noopener">Section Planner</a> for every CoBE department, updated each term</td><td><span class="tag given">provided</span></td></tr>
       <tr><td><strong>Teaching loads</strong><br><code>teaching_loads_YYYY-YYYY.csv</code></td><td>How many sections each person teaches in Fall and in Spring, including releases and overloads.</td><td><a href="teaching-loads.html" target="_blank" rel="noopener">Teaching Loads page</a>, starting from your instructor list</td><td><span class="tag edit">edit by hand</span></td></tr>
       <tr><td><strong>Preferences survey</strong><br><code>.xlsx</code></td><td>Each instructor's preferred days and times, times they can't teach, and preferred courses.</td><td>Survey you send to faculty (see below)</td><td><span class="tag you">you run it</span></td></tr>
       <tr><td><strong>Soft constraints</strong><br><code>soft_constraints.csv</code></td><td>Department rules with a priority. Examples: "401, 402 and 442 should not overlap" or "no section of 341 before 9:30." Turn the survey answers into rules here too.</td><td><a href="soft-constraints.html" target="_blank" rel="noopener">Soft Constraints page</a></td><td><span class="tag edit">you write them</span></td></tr>
@@ -134,8 +135,8 @@ a { color: var(--accent); }
   <h3>Soft constraints</h3>
   <p>Open the <a href="soft-constraints.html" target="_blank" rel="noopener">Soft Constraints page</a>. The rows already there are examples from another department, so click <strong>Clear all</strong> first. Then add one row per rule, with a priority (High, Medium or Low). Rules can come from the survey ("Prof. X can't teach Fridays") or from your programs ("courses in the same emphasis must not overlap"). Click <strong>Export CSV</strong> and save <code>soft_constraints.csv</code> in your year folder. To edit it later, use <strong>Open CSV…</strong>.</p>
 
-  <h3>Downloading enrolment from IRAP</h3>
-  <div class="note">Detailed instructions are coming. In short: download the raw per-semester file for each past term, keep the original file names, and save them all in one folder.</div>
+  <h3>Enrolment</h3>
+  <p>You don't need to download anything. Enrolment for every CoBE department is collected from IRAP once per term, after census, and built into the Section Planner. Only course-level numbers are included (sections and students), with no instructor names.</p>
 
   <h3>Running the survey</h3>
   <p>Send it early, at least three weeks before your draft date. Ask for days and times people can't teach, preferred teaching days, courses they want to teach, and any special needs, such as a room type or back-to-back sections.</p>
@@ -151,8 +152,14 @@ a { color: var(--accent); }
 <section class="step" id="s2">
   <h2><span class="num">2</span>Decide how many sections</h2>
   <p class="who">Turns enrolment into a number of in-person and online sections per course.</p>
-  <p>In the <strong>Section Planner</strong>, each course shows last year's sections and students, and a suggested number of sections at a target size, for Fall and Spring separately. Change the numbers wherever you know better: a new hire, a course moving online, or a rotation change in the long-range file. Save the result as <code>section_plan_YYYY-YYYY.csv</code>.</p>
-  <div class="note warn">For a fall term that hasn't reached census yet, the IRAP numbers are low. Base the plan on the previous fall instead.</div>
+  <ol>
+    <li>Open the <a href="section-planner.html" target="_blank" rel="noopener">Section Planner</a> and <strong>choose your department</strong> (subject code) at the top.</li>
+    <li>Each course shows its recent history, last term's in-person and online sections and students, and a suggested number of sections at your target size. Fall and Spring are on separate tabs.</li>
+    <li>Change the numbers wherever you know better: a new hire, a course moving online, or a rotation change in the long-range file. Use <strong>Add a course</strong> for a new course.</li>
+    <li>Click <strong>Save file (.csv)</strong>. Move <code>section_plan_&lt;DEPT&gt;_YYYY-YYYY.csv</code> from Downloads into your year folder.</li>
+  </ol>
+  <div class="note warn">Use the <strong>"Suggestions based on"</strong> menu to choose which past term to plan from. A term downloaded before census has low numbers. If you see one, base the plan on the same term a year earlier.</div>
+  <p>Courses taught by another department (for example some BEINDP courses) are listed under their own subject code. Switch the department menu to plan them. Each department's draft is kept separately.</p>
 </section>
 
 <section class="step" id="s3">
