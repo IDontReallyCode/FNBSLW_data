@@ -133,6 +133,13 @@ dialog h2 { margin: 0 0 10px; font-size: 17px; color: var(--accent); }
 #msg.err { color: var(--err); }
 .empty { padding: 30px; text-align: center; color: var(--muted); }
 .empty ol { text-align: left; display: inline-block; margin: 10px 0 0; }
+.coverage { padding: 12px 14px; }
+.coverage h3 { margin: 4px 0 6px; font-size: 15px; } .coverage h3 small { font-weight: 400; color: var(--muted); }
+.coverage h3 + p, .coverage .tbl { margin-bottom: 14px; }
+.covsum { margin: 0 0 8px; } .covnote { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+table.cov td.n, table.cov th.n { text-align: right; white-space: nowrap; } table.cov td.t { color: var(--muted); font-size: 12.5px; }
+table.cov tr.warn td { background: transparent; } table.cov tr.warn td:first-child { box-shadow: inset 3px 0 var(--warn); }
+.covadd { font-size: 12px; padding: 2px 8px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 </style>
 </head>
@@ -150,7 +157,7 @@ dialog h2 { margin: 0 0 10px; font-size: 17px; color: var(--accent); }
     <span class="sep"></span>
     <button id="b-undo" title="Undo (Ctrl+Z)">↶ Undo</button>
     <button id="b-redo" title="Redo (Ctrl+Y)">↷ Redo</button>
-    <button id="b-add">+ Add section</button>
+    <button id="b-add" title="New course or section. Tip: double-click an empty cell in the room or instructor grid to add one at that time.">+ Add section</button>
     <span class="sep"></span>
     <button id="b-save" title="The working file: open it again later to continue">Save schedule (.csv)</button>
     <button id="b-ay" title="One sheet per term, AY Memo columns, to paste into the official file">Export AY Memo columns (.xlsx)</button>
@@ -492,7 +499,11 @@ function importPlan(sheet, hi) {
     const course = pick(h, r, "course"); if (!course) continue;
     out.push({ season: seasonOf(normTermName(pick(h, r, "term"))), term: normTermName(pick(h, r, "term")), course: course.toUpperCase(),
       ip: num(pick(h, r, "planned_in_person")) || 0, on: num(pick(h, r, "planned_online")) || 0,
-      ipStu: num(pick(h, r, "last_in_person_students")) || 0, onStu: num(pick(h, r, "last_online_students")) || 0, basedOn: pick(h, r, "based_on_term") });
+      // students: the planner's forecast when the file has it (newer files), else the base term's actual count
+      ipStu: num(pick(h, r, "forecast_in_person_students")) ?? num(pick(h, r, "last_in_person_students")) ?? 0,
+      onStu: num(pick(h, r, "forecast_online_students")) ?? num(pick(h, r, "last_online_students")) ?? 0,
+      basedOn: pick(h, r, "forecast_in_person_students") ? "forecast" : pick(h, r, "based_on_term"),
+      title: pick(h, r, "title") || "", note: pick(h, r, "note") || "" });
   }
   return out;
 }
@@ -527,6 +538,8 @@ function guessOurDept() {
 }
 
 // ======================================================================= checks
+// Counts toward a teaching load: not independent study, not internships (e.g. FNBSLW 493, any "Internship" title)
+const countsForLoad = s => s.modality !== "IS" && !/internship/i.test(s.title || "") && !/\s493$/.test(s.course || "");
 function check(term) {
   const secs = S.sections.filter(s => s.term === term), issues = [], status = {};
   const mark = (ids, lvl) => ids.forEach(id => { if (lvl === "e" || !status[id]) status[id] = lvl === "h" ? status[id] : lvl; });
@@ -555,15 +568,16 @@ function check(term) {
   if (S.loads && (season === "Fall" || season === "Spring")) {
     for (const [k, L] of Object.entries(S.loads)) {
       const want = L[season]; if (want == null) continue;
-      const have = (byI[k]?.list || []).filter(s => s.modality !== "IS");
+      const have = (byI[k]?.list || []).filter(countsForLoad);
       const n = `${have.length} section${have.length === 1 ? "" : "s"}`;
       if (have.length > want) add("w", `${L.name}: ${n}, load is ${want} (over by ${have.length - want})`, have.map(s => s.id));
       else if (have.length < want) add("w", `${L.name}: ${n}, load is ${want} (${want - have.length} to assign)`, have.map(s => s.id));
     }
     for (const [k, I] of Object.entries(byI)) if (!S.loads[k]) add("h", `${I.name} is not in the teaching loads file`, I.list.map(s => s.id));
   }
-  // every instructor with at least 1 face-to-face section
-  for (const I of Object.values(byI)) if (I.list.length && !I.list.some(s => s.modality === "F2F" || s.modality === "Hybrid"))
+  // every instructor with at least 1 face-to-face section (the chair is exempt)
+  const isChair = k => S.loads && S.loads[k] && /chair/i.test(S.loads[k].position || "");
+  for (const [k, I] of Object.entries(byI)) if (I.list.length && !isChair(k) && !I.list.some(s => s.modality === "F2F" || s.modality === "Hybrid"))
     add("w", `${I.name} has no face-to-face section this term`, I.list.map(s => s.id));
   // section plan + expected students
   const exp = {};
@@ -575,9 +589,9 @@ function check(term) {
       if (on.length !== p.on) add("w", `${p.course}: ${on.length} online section${on.length === 1 ? "" : "s"}, plan says ${p.on}`, on.map(s => s.id));
       const e1 = ip.length ? p.ipStu / ip.length : null, e2 = on.length ? p.onStu / on.length : null;
       ip.forEach(s => exp[s.id] = e1); on.forEach(s => exp[s.id] = e2);
-      if (e1 != null && Math.round(e1) > 50) add("w", `${p.course}: about ${Math.round(e1)} students per in-person section (${p.ipStu} in ${p.basedOn || "base term"})`, ip.map(s => s.id));
-      if (e2 != null && Math.round(e2) > 50) add("w", `${p.course}: about ${Math.round(e2)} students per online section (${p.onStu} in ${p.basedOn || "base term"})`, on.map(s => s.id));
-      if (!ip.length && p.ipStu) add("w", `${p.course}: ${p.ipStu} in-person students last time, no in-person section`, []);
+      if (e1 != null && Math.round(e1) > 50) add("w", `${p.course}: about ${Math.round(e1)} students per in-person section (${p.ipStu} ${p.basedOn === "forecast" ? "forecast" : "in " + (p.basedOn || "base term")})`, ip.map(s => s.id));
+      // online sections may be large: no size warning for them
+      if (!ip.length && p.ipStu) add("w", `${p.course}: ${p.ipStu} in-person students ${p.basedOn === "forecast" ? "forecast" : "last time"}, no in-person section`, []);
     }
     const planned = new Set(rows.map(p => p.course));
     for (const c of new Set(secs.map(s => s.course))) if (!planned.has(c) && rows.length) add("h", `${c} is scheduled but not in the section plan`, secs.filter(s => s.course === c).map(s => s.id));
@@ -743,7 +757,7 @@ function renderInstructors(term, R) {
   if (S.loads) for (const [k, L] of Object.entries(S.loads)) if (!people.has(k)) people.set(k, { key: k, name: L.name, list: [] });
   const season = seasonOf(term);
   const rowsDef = [...people.values()].sort((a, b) => lastName(a.name).localeCompare(lastName(b.name))).map(p => {
-    const L = S.loads && S.loads[p.key], n = p.list.filter(s => s.modality !== "IS").length, want = L ? L[season] : null;
+    const L = S.loads && S.loads[p.key], n = p.list.filter(countsForLoad).length, want = L ? L[season] : null;
     const col = want == null ? "var(--muted)" : n === want ? "var(--ok)" : "var(--warn)";
     state.instrNames.set(p.key, p.key.startsWith("tbd:") ? p.key.slice(4) : p.name);
     return { key: p.key, html: `${esc(p.name)}<small style="color:${col}">${n} section${n === 1 ? "" : "s"}${want != null ? ` / load ${want}` : ""}</small>` };
@@ -765,6 +779,63 @@ function renderTable(term, R) {
         <td>${s.cap ?? ""}${r && r.cap != null ? `<span style="color:var(--faint)">/${r.cap}</span>` : ""}</td><td>${esc(s.instructor || "–")}</td><td>${esc(s.session)}</td>
         <td>${e != null ? Math.round(e) : ""}</td><td>${esc(s.note)}</td></tr>`; }).join("")}
     </tbody></table></div><p style="color:var(--muted);font-size:12.5px">Click a row to edit it. ${list.length} sections.</p>`;
+}
+// Coverage: section plan vs scheduled sections (per course), teaching loads vs assigned sections (per person)
+function nextSectionNo(term, course, online) {
+  const nums = S.sections.filter(x => x.term === term && x.course === course).map(x => parseInt(x.section) || 0);
+  return pad2(String((online ? Math.max(21, ...nums.filter(n => n >= 21 && n < 30)) : Math.max(0, ...nums.filter(n => n < 21))) + 1));
+}
+function renderCoverage(term) {
+  const season = seasonOf(term), secs = S.sections.filter(s => s.term === term);
+  const isIP = s => s.modality === "F2F" || s.modality === "Hybrid", isOn = s => s.modality === "Online";
+  const gapCell = (have, want) => want == null ? `<td class="n">${have}</td><td class="n" style="color:var(--faint)">–</td>`
+    : `<td class="n">${have} <span style="color:var(--faint)">/ ${want}</span></td><td class="n" style="font-weight:700;color:${have === want ? "var(--ok)" : have < want ? "var(--err)" : "var(--warn)"}">${have === want ? "✓" : have < want ? `${want - have} missing` : `+${have - want}`}</td>`;
+  // ---- courses
+  let courses = "";
+  const P = S.plan ? S.plan.filter(p => p.season === season) : [];
+  if (!S.plan) courses = `<p class="covnote">Open your <b>section_plan_….csv</b> (Open files…) to compare the schedule with the plan.</p>`;
+  else if (!P.length) courses = `<p class="covnote">The section plan has no ${esc(season || term)} rows.</p>`;
+  else {
+    const ids = [...new Set(P.map(p => p.course).concat(secs.map(s => s.course)))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    let tp = [0, 0], th = [0, 0], miss = 0;
+    const rows = ids.map(c => {
+      const p = P.find(x => x.course === c), list = secs.filter(s => s.course === c);
+      const hi = list.filter(isIP).length, ho = list.filter(isOn).length, wi = p ? p.ip : 0, wo = p ? p.on : 0;
+      tp[0] += wi; tp[1] += wo; th[0] += hi; th[1] += ho; miss += Math.max(0, wi - hi) + Math.max(0, wo - ho);
+      const title = (p && p.title) || (list[0] && list[0].title) || "";
+      const btn = (mode, n) => n > 0 ? `<button type="button" class="covadd" data-cov-course="${esc(c)}" data-cov-mode="${mode}" data-cov-title="${esc(title)}">+ add ${mode === "Online" ? "online" : "in person"}</button>` : "";
+      const off = (wi === hi && wo === ho);
+      return `<tr class="${off ? "" : "warn"}"><td>${esc(c)}${p ? "" : ' <small style="color:var(--warn)">not in plan</small>'}</td><td class="t">${esc(title)}</td>
+        ${gapCell(hi, wi)}${gapCell(ho, wo)}<td>${btn("F2F", wi - hi)} ${btn("Online", wo - ho)}</td></tr>`;
+    }).join("");
+    courses = `<p class="covsum"><b>${th[0] + th[1]}</b> sections scheduled / <b>${tp[0] + tp[1]}</b> planned
+      (in person ${th[0]}/${tp[0]}, online ${th[1]}/${tp[1]})${miss ? ` · <b style="color:var(--err)">${miss} missing</b>` : " · ✓ every planned section exists"}</p>
+      <div class="tbl"><table class="list cov"><thead><tr><th>Course</th><th>Title</th><th class="n">In person</th><th class="n"></th><th class="n">Online</th><th class="n"></th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  // ---- instructors
+  let people = "";
+  const tbd = secs.filter(s => isTBD(s.instructor) && s.modality !== "IS");
+  if (!S.loads) people = `<p class="covnote">Open your <b>teaching_loads_….csv</b> to compare loads with assigned sections.</p>`;
+  else if (season !== "Fall" && season !== "Spring") people = `<p class="covnote">Loads are set for Fall and Spring only.</p>`;
+  else {
+    const byK = {}; for (const s of secs) { const k = resolveKey(s.instructor); if (k && countsForLoad(s)) (byK[k] = byK[k] || []).push(s); }
+    let want = 0, have = 0, short = 0;
+    const L = Object.entries(S.loads).map(([k, l]) => ({ k, name: l.name, want: l[season], list: byK[k] || [] }))
+      .concat(Object.keys(byK).filter(k => !S.loads[k]).map(k => ({ k, name: byK[k][0].instructor, want: null, list: byK[k] })))
+      .sort((a, b) => lastName(a.name).localeCompare(lastName(b.name)));
+    const rows = L.map(x => {
+      if (x.want != null) { want += x.want; have += Math.min(x.list.length, x.want); short += Math.max(0, x.want - x.list.length); }
+      const secsTxt = x.list.map(s => `${s.course.split(" ").pop()}-${s.section}${isOn(s) ? " (OL)" : ""}`).join(", ");
+      return `<tr class="${x.want != null && x.list.length !== x.want ? "warn" : ""}"><td>${esc(x.name)}${x.want == null ? ' <small style="color:var(--warn)">not in loads file</small>' : ""}</td>
+        ${gapCell(x.list.length, x.want)}<td class="t">${esc(secsTxt) || '<span style="color:var(--faint)">–</span>'}</td></tr>`;
+    }).join("");
+    people = `<p class="covsum">Loads add up to <b>${want}</b> sections; <b>${short ? `${short} still to assign` : "all assigned"}</b>.
+      ${tbd.length ? ` · <b style="color:var(--warn)">${tbd.length} section${tbd.length === 1 ? "" : "s"} with no instructor</b>: ${esc(tbd.map(label).join(", "))}` : ""}</p>
+      <div class="tbl"><table class="list cov"><thead><tr><th>Instructor</th><th class="n">Assigned / load</th><th class="n"></th><th>Sections</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  return `<div class="panel coverage"><h3>Courses: section plan vs schedule <small>${esc(term)}</small></h3>${courses}
+    <h3>Instructors: load vs assigned <small>${esc(term)}, independent study and internships not counted</small></h3>${people}
+    <p class="covnote">"+ add" creates the missing section with no time and no instructor. Then give it an instructor here or in the Instructor grid (online sections sit in the first column), or a time and room in the Room grid.</p></div>`;
 }
 function renderLog() {
   return `<div class="panel log"><p style="margin:0 0 6px;color:var(--muted)">Every change since the schedule was loaded (${S.log.length}). It goes into “Export for AI audit”.</p>
@@ -794,7 +865,7 @@ function render() {
   const results = Object.fromEntries(T.map(t => [t, check(t)]));
   $("termtabs").innerHTML = T.map(t => { const r = results[t], e = r.issues.filter(i => i.lvl === "e").length, w = r.issues.filter(i => i.lvl === "w").length;
     return `<button data-term="${esc(t)}" aria-selected="${t === S.term}">${esc(t)} <span style="font-weight:400;color:var(--faint)">${S.sections.filter(s => s.term === t).length}</span>${e ? `<span class="count e">${e}</span>` : ""}${w ? `<span class="count w">${w}</span>` : ""}</button>`; }).join("");
-  $("viewtabs").innerHTML = [["rooms", "Room grid"], ["instr", "Instructor grid"], ["table", "Table"], ["log", `Changes (${S.log.length})`]]
+  $("viewtabs").innerHTML = [["rooms", "Room grid"], ["instr", "Instructor grid"], ["table", "Table"], ["cover", "Coverage"], ["log", `Changes (${S.log.length})`]]
     .map(([k, n]) => `<button data-view="${k}" aria-selected="${S.view === k}">${n}</button>`).join("");
   if (!S.sections.length) {
     $("view").innerHTML = `<div class="panel empty"><b>Start by opening your files</b> (Open files…, several at once is fine):<ol>
@@ -804,7 +875,7 @@ function render() {
     $("issues").innerHTML = ""; return;
   }
   const R = results[S.term];
-  $("view").innerHTML = S.view === "rooms" ? renderRooms(S.term, R) : S.view === "instr" ? renderInstructors(S.term, R) : S.view === "table" ? renderTable(S.term, R) : renderLog();
+  $("view").innerHTML = S.view === "rooms" ? renderRooms(S.term, R) : S.view === "instr" ? renderInstructors(S.term, R) : S.view === "table" ? renderTable(S.term, R) : S.view === "cover" ? renderCoverage(S.term) : renderLog();
   renderIssues(S.term, R);
   $("dl-rooms").innerHTML = S.rooms.map(r => `<option value="${esc(r.id)}">${r.cap ?? "?"} seats · ${esc(r.dept)}</option>`).join("");
   $("dl-instr").innerHTML = [...new Set(S.sections.map(s => s.instructor).filter(Boolean).concat(S.loads ? Object.values(S.loads).map(l => l.name) : []))].sort().map(n => `<option value="${esc(n)}">`).join("");
@@ -833,6 +904,13 @@ document.addEventListener("drop", e => {
 
 // ======================================================================= events: clicks
 document.addEventListener("click", e => {
+  const ca = e.target.closest("[data-cov-course]");
+  if (ca) {
+    const c = ca.dataset.covCourse, online = ca.dataset.covMode === "Online";
+    openDialog({ id: null, term: S.term, course: c, section: nextSectionNo(S.term, c, online), title: ca.dataset.covTitle || "", credits: 3, session: "Full Term",
+      modality: online ? "Online" : "F2F", cap: null, days: "", start: null, end: null, room: "", instructor: "", note: "", flags: [] }, true);
+    return;
+  }
   const card = e.target.closest(".card"); if (card) { openDialog(byId(card.dataset.id)); return; }
   const tr = e.target.closest("table.list tbody tr[data-id]"); if (tr) { openDialog(byId(tr.dataset.id)); return; }
   const th = e.target.closest("table.list th[data-sort]"); if (th) { S.sort = th.dataset.sort; render(); return; }
@@ -843,6 +921,17 @@ document.addEventListener("click", e => {
     const s = byId(id); if (S.view !== "rooms" && S.view !== "instr") S.view = s.room || !timed(s) ? "rooms" : "instr";
     state.flashId = id; render();
   }
+});
+// double-click an empty spot in a grid cell = add a section there (time + room, or time + instructor)
+document.addEventListener("dblclick", e => {
+  const cell = e.target.closest?.("td.cell"); if (!cell || e.target.closest(".card")) return;
+  const v = { id: null, term: S.term, course: subjectCode() ? subjectCode() + " " : "", section: "", title: "", credits: 3, session: "Full Term",
+    modality: "F2F", cap: null, days: "", start: null, end: null, room: "", instructor: "", note: "", flags: [] };
+  if (cell.dataset.slot === "none") v.modality = "Online";
+  else { const [days, a, b] = cell.dataset.slot.split("|"); Object.assign(v, { days, start: +a, end: +b }); }
+  if (S.view === "rooms") v.room = cell.dataset.row;
+  else v.instructor = state.instrNames.get(cell.dataset.row) ?? "";
+  openDialog(v, true);
 });
 document.addEventListener("change", e => {
   if (e.target.id === "o-other") { S.settings.showOther = e.target.checked; render(); }
