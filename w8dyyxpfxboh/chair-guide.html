@@ -128,7 +128,8 @@ a { color: var(--accent); }
     <li>Open the <a href="teaching-loads.html" target="_blank" rel="noopener">Teaching Loads page</a> and <strong>choose your department</strong> at the top.</li>
     <li>The list starts with everyone who taught your subject in the last three Fall/Spring terms. The <strong>Recent</strong> column shows how many sections each person taught in each term, in any subject. Hover over it to see the sections. Remove people who are leaving or were one-off adjuncts, and use <strong>Add</strong> for new hires.</li>
     <li>Set each person's position (tenure track 3-3, lecturer 4-4, and so on). Type any change to the Fall or Spring load and pick a reason.</li>
-    <li>Click <strong>Save file (.csv)</strong>. Move <code>teaching_loads_&lt;DEPT&gt;_YYYY-YYYY.csv</code> from Downloads into your year folder.</li>
+    <li>Open the <strong>Course preferences</strong> tab. For each person, drag your department's courses into <strong>YES</strong>, <strong>MAYBE</strong> or <strong>HARD NO</strong>. <strong>Taught before → YES</strong> and <strong>All not sorted → HARD NO</strong> do most of the work, and <strong>Copy from…</strong> copies a colleague's sort (for example, from one law professor to another). HARD NO is a hard rule: the AI is told never to break it, and the Schedule Editor shows it as a red error.</li>
+    <li>Click <strong>Save file (.csv)</strong>. The preferences are saved in the same file. Move <code>teaching_loads_&lt;DEPT&gt;_YYYY-YYYY.csv</code> from Downloads into your year folder.</li>
   </ol>
   <p>Next time, use <strong>Open saved file…</strong> with your saved file. <strong>Start over</strong> clears your entries and reloads your department's list.</p>
 
@@ -154,11 +155,12 @@ a { color: var(--accent); }
   <p class="who">Turns enrolment into a number of in-person and online sections per course.</p>
   <ol>
     <li>Open the <a href="section-planner.html" target="_blank" rel="noopener">Section Planner</a> and <strong>choose your department</strong> (subject code) at the top.</li>
-    <li>Each course shows its recent history, last term's in-person and online sections and students, and a suggested number of sections at your target size. Fall and Spring are on separate tabs.</li>
-    <li>Change the numbers wherever you know better: a new hire, a course moving online, or a rotation change in the long-range file. Use <strong>Add a course</strong> for a new course.</li>
+    <li>Each course shows the last four years of the term as students/sections (in person on top, online below), a <strong>forecast</strong> of students, and a suggested number of sections at your target size. Fall and Spring are on separate tabs.</li>
+    <li>The forecast starts at last term's students. Type your own forecast wherever you expect a change; the suggested sections follow it, and the Schedule Editor uses it for the expected students per section.</li>
+    <li>Change the planned sections wherever you know better: a new hire, a course moving online, or a rotation change in the long-range file. Use <strong>Add a course</strong> for a new course.</li>
     <li>Click <strong>Save file (.csv)</strong>. Move <code>section_plan_&lt;DEPT&gt;_YYYY-YYYY.csv</code> from Downloads into your year folder.</li>
   </ol>
-  <div class="note warn">Use the <strong>"Suggestions based on"</strong> menu to choose which past term to plan from. A term downloaded before census has low numbers. If you see one, base the plan on the same term a year earlier.</div>
+  <div class="note warn">Use the <strong>"default forecast from"</strong> menu to choose which past term the forecast starts from. A term downloaded before census has low numbers. If you see one, base the plan on the same term a year earlier.</div>
   <p>Courses taught by another department (for example some BEINDP courses) are listed under their own subject code. Switch the department menu to plan them. Each department's draft is kept separately.</p>
 </section>
 
@@ -178,6 +180,7 @@ Files attached:
 - Long-range rotation: offer only the courses listed for each term, in the modality listed.
 - Section plan: the number of in-person and online sections per course per term.
 - Teaching loads: the number of sections each instructor teaches in Fall and in Spring. Match these exactly.
+- Course preferences (columns courses_yes, courses_maybe, courses_no in the teaching loads file): NEVER give anyone a course in their courses_no (HARD NO). Give people courses from their courses_yes. Use courses_maybe only when no one with YES has load left. If no one can take a section, put TBD and tell me.
 - Rooms: use only these rooms, and never put a section in a room smaller than its cap. Prefer rooms owned by my department.
 - Soft constraints and survey: respect them in priority order (High, then Medium, then Low).
 
@@ -215,7 +218,7 @@ Output: one file in the draft format, one row per section. Then give a short lis
   </ol>
   <div class="prompt"><button type="button" data-copy="p2">Copy</button><pre id="p2">Audit this course schedule. Do NOT rewrite or return the schedule.
 
-Attached: the schedule (with a change log and a list of remaining warnings), our soft constraints with priorities, and the faculty preference survey.
+Attached: the schedule (with a change log, a list of remaining warnings, and each instructor's courses sorted YES / MAYBE / HARD NO), our soft constraints with priorities, and the faculty preference survey. A HARD NO course must never be suggested for that person.
 
 1. List every soft constraint and survey preference that the schedule breaks, highest priority first. For each one, give the constraint ID or the person, the sections involved, and why it is broken.
 2. For each problem, suggest the smallest change that fixes it, for example "move FNBSLW 341-02 from TR 8:00 to TR 9:30 in the same room." Check that your change does not create a room or instructor clash or exceed a room's capacity.
