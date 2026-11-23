@@ -91,6 +91,7 @@ table.grid { border-collapse: separate; border-spacing: 0; }
 .card b { font-size: 12px; }
 .card .who { color: var(--muted); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
 .card .meta { color: var(--faint); font-size: 10.5px; }
+.card .meta .sess { color: var(--accent); font-weight: 600; }
 .card.online { background: var(--online); border-left-color: var(--hint); }
 .card.err { border-color: var(--err); border-left-color: var(--err); box-shadow: 0 0 0 1px var(--err); }
 .card.warn { border-left-color: var(--warn); }
@@ -148,7 +149,7 @@ table.cov tr.warn td { background: transparent; } table.cov tr.warn td:first-chi
 </style>
 </head>
 <body>
-<div id="app-version" data-hash="eea97717" title="Page version (content id eea97717). Same version here and on the website = same file." style="position:absolute;top:3px;right:10px;font:11px/1.2 system-ui,sans-serif;color:#8b8697;z-index:9999">v 2026-11-23 13:30</div>
+<div id="app-version" data-hash="50b8a8df" title="Page version (content id 50b8a8df). Same version here and on the website = same file." style="position:absolute;top:3px;right:10px;font:11px/1.2 system-ui,sans-serif;color:#8b8697;z-index:9999">v 2026-11-23 13:39</div>
 <div class="wrap">
   <header>
     <h1>Schedule Editor</h1>
@@ -192,7 +193,7 @@ table.cov tr.warn td { background: transparent; } table.cov tr.warn td:first-chi
       <label>Credits<input name="credits" type="number" min="0" step="1"></label>
       <label class="w4">Title<input name="title"></label>
       <label>Term<select name="term"></select></label>
-      <label>Session<input name="session" placeholder="Full Term" list="dl-session"></label>
+      <label>Session<select name="session"></select></label>
       <label>Modality<select name="modality"><option>F2F</option><option>Online</option><option>IS</option><option>Hybrid</option></select></label>
       <label>Cap<input name="cap" type="number" min="0" step="1"></label>
       <label>Days<input name="days" placeholder="MW, TR, W, N/A" list="dl-days"></label>
@@ -212,7 +213,7 @@ table.cov tr.warn td { background: transparent; } table.cov tr.warn td:first-chi
   </form>
 </dialog>
 <datalist id="dl-days"><option>MW</option><option>TR</option><option>MWF</option><option>M</option><option>T</option><option>W</option><option>R</option><option>F</option><option>N/A</option></datalist>
-<datalist id="dl-session"><option>Full Term</option><option>1st 8 week</option><option>2nd 8 week</option><option>1st 6 week</option><option>2nd 6 week</option><option>3rd 6 week</option><option>Mini</option></datalist>
+
 <datalist id="dl-rooms"></datalist>
 <datalist id="dl-instr"></datalist>
 
@@ -304,8 +305,26 @@ function normTermName(t) {
   let y = +m[2]; if (y < 100) y += 2000; let season = m[1].toLowerCase().startsWith("winter") ? "Winter" : m[1][0].toUpperCase() + m[1].slice(1).toLowerCase();
   return `${season} ${y}`;
 }
+// sessions inside a term: Fall/Spring = full term or one 8-week half; Summer = three 6-week sessions; Winter = mini
+const SESSIONS = {
+  Fall: [["Full Term", "Full term"], ["1st Half", "1st half (first 8 weeks)"], ["2nd Half", "2nd half (last 8 weeks)"]],
+  Spring: [["Full Term", "Full term"], ["1st Half", "1st half (first 8 weeks)"], ["2nd Half", "2nd half (last 8 weeks)"]],
+  Summer: [["1st 6 week", "1st 6 weeks"], ["2nd 6 week", "2nd 6 weeks"], ["3rd 6 week", "3rd 6 weeks"], ["Full Term", "Whole summer"]],
+  Winter: [["Mini", "Winterim"], ["Full Term", "Full term"]],
+};
+// one spelling per session, whatever the file said ("1st 8 weeks", "first half", "2nd 6-week"...)
+function normSession(v) {
+  const t = String(v ?? "").trim(), l = t.toLowerCase(); if (!t || /full|regular/.test(l)) return "Full Term";
+  const w = (/\b(1st|first|2nd|second|3rd|third)\b/.exec(l) || [""])[0], n = { "1st": 1, first: 1, "2nd": 2, second: 2, "3rd": 3, third: 3 }[w] || 0;
+  const ord = ["", "1st", "2nd", "3rd"][n];
+  if (n && /6/.test(l)) return `${ord} 6 week`;
+  if (n && n < 3 && /half|8/.test(l)) return `${ord} Half`;
+  if (/mini|winterim/.test(l)) return "Mini";
+  return t;
+}
+const sessionLabel = v => { for (const L of Object.values(SESSIONS)) { const m = L.find(([k]) => k === v); if (m) return m[1]; } return v; };
 function sameSessionWindow(a, b) {
-  const A = String(a.session || "").toLowerCase(), B = String(b.session || "").toLowerCase();
+  const A = normSession(a.session).toLowerCase(), B = normSession(b.session).toLowerCase();
   if (!A || !B || A === B || /full/.test(A) || /full/.test(B)) return true;
   return false;
 }
@@ -448,7 +467,7 @@ function importSchedule(sheet, hi) {
     const days = normDays(pick(h, r, "days"));
     if (days && (start == null || end == null)) flags.push("Days given but start/end time missing or unreadable.");
     out.push({ id: uid(), term: normTermName(pick(h, r, "term")), termCode: pick(h, r, "term_code", "termcode"), course: course.toUpperCase().replace(/\s+/g, " "),
-      section: pad2(pick(h, r, "section")), title: pick(h, r, "title"), credits: num(pick(h, r, "credits")), session: pick(h, r, "session") || "Full Term",
+      section: pad2(pick(h, r, "section")), title: pick(h, r, "title"), credits: num(pick(h, r, "credits")), session: normSession(pick(h, r, "session")),
       days, start: days ? start : null, end: days ? end : null, room: rm.room, instructor: pick(h, r, "instructor"),
       modality: normModality(pick(h, r, "modality"), rm.room), cap: num(pick(h, r, "cap")), note: pick(h, r, "note"), flags });
   }
@@ -478,7 +497,7 @@ function importAYMemo(sheet, hi) {
     if (rm.multiple) flags.push(`Room cell "${rr}" had more than one value; used "${rm.room}".`);
     const ins = pick(h, r, "instructor");
     out.push({ id: uid(), term, termCode: pick(h, r, "term"), course, section: sec, title: pick(h, r, "course title"), credits: num(pick(h, r, "credits")),
-      session: pick(h, r, "session") || "Full Term", days, start: t ? t.start : null, end: t ? t.end : null, room: rm.room,
+      session: normSession(pick(h, r, "session")), days, start: t ? t.start : null, end: t ? t.end : null, room: rm.room,
       instructor: /^0$|^online$/i.test(ins) ? "" : ins, modality: normModality(pick(h, r, "modality"), rm.room), cap: num(pick(h, r, "cap")),
       note: pick(h, r, "note"), flags });
   }
@@ -720,7 +739,7 @@ function cardHtml(s, R) {
   return `<div class="card ${s.modality === "Online" ? "online" : ""} ${st === "e" ? "err" : st === "w" ? "warn" : ""} ${state.flashId === s.id ? "flash" : ""}" draggable="true" data-id="${s.id}"
     title="${esc(label(s))} ${esc(s.title)}\n${esc(s.instructor || "no instructor")}\n${timed(s) ? esc(s.days + " " + fmtRange(s.start, s.end)) : "no time"} · ${esc(s.room || s.modality)}\nClick to edit, drag to move">
     ${ex}<b>${esc(s.course.split(" ").pop())}-${esc(s.section)}</b>
-    <span class="who">${esc(lastName(s.instructor) || "TBD")}</span><span class="meta">${esc(capTxt)}${s.session && !/full/i.test(s.session) ? " · " + esc(s.session) : ""}</span></div>`;
+    <span class="who">${esc(lastName(s.instructor) || "TBD")}</span><span class="meta">${esc(capTxt)}${s.session && !/full/i.test(s.session) ? ` · <b class="sess" title="${esc(sessionLabel(s.session))}">${esc(s.session)}</b>` : ""}</span></div>`;
 }
 function gridHtml(rowsDef, cols, cellSecs, R, kind) {
   const head = `<tr><th class="rowh corner">${kind === "room" ? "Room" : "Instructor"}</th>${cols.map(c => c.none
@@ -986,7 +1005,9 @@ function openDialog(s, isNew) {
   editing = { id: s ? s.id : null, isNew: !!isNew };
   const f = $("dform"), v = s || { term: S.term, course: subjectCode() ? subjectCode() + " " : "", section: "", title: "", credits: 3, session: "Full Term", modality: "F2F", cap: null, days: "", start: null, end: null, room: "", instructor: "", note: "", flags: [] };
   f.term.innerHTML = [...new Set(terms().concat(S.term ? [S.term] : []))].map(t => `<option ${t === v.term ? "selected" : ""}>${esc(t)}</option>`).join("");
-  for (const k of ["course", "section", "title", "session", "room", "instructor", "note", "days"]) f[k].value = v[k] ?? "";
+  for (const k of ["course", "section", "title", "room", "instructor", "note", "days"]) f[k].value = v[k] ?? "";
+  const sess = normSession(v.session);                     // a new Summer section starts in the 1st 6 weeks, not "whole summer"
+  syncSession((!s || isNew) && seasonOf(v.term) === "Summer" && sess === "Full Term" ? "1st 6 week" : sess);
   f.credits.value = v.credits ?? ""; f.cap.value = v.cap ?? ""; f.modality.value = v.modality || "F2F";
   f.start.value = hhmm(v.start); f.end.value = hhmm(v.end);
   $("presets").innerHTML = PRESETS.map(([d, a, b]) => `<button type="button" data-p="${d}|${a}|${b}">${d} ${fmtRange(a, b)}</button>`).join("") + `<button type="button" data-p="||">No time</button>`;
@@ -1024,12 +1045,20 @@ function syncModality() {
   f.room.placeholder = off ? "no room (online / IS)" : "HH1311";
 }
 $("dform").modality.addEventListener("change", syncModality);
+function syncSession(want) {
+  const f = $("dform"), season = seasonOf(f.term.value), cur = want ?? f.session.value;
+  const opts = (SESSIONS[season] || SESSIONS.Fall).slice();
+  if (want && !opts.some(([k]) => k === want)) opts.push([want, want]);          // keep an unusual value from a file
+  f.session.innerHTML = opts.map(([k, lab]) => `<option value="${esc(k)}">${esc(lab)}</option>`).join("");
+  f.session.value = opts.some(([k]) => k === cur) ? cur : opts[0][0];
+}
+$("dform").term.addEventListener("change", () => syncSession());
 $("presets").addEventListener("click", e => { const b = e.target.closest("[data-p]"); if (!b) return; const [d, a, c] = b.dataset.p.split("|"), f = $("dform"); f.days.value = d; f.start.value = hhmm(a === "" ? null : +a); f.end.value = hhmm(c === "" ? null : +c); });
 $("d-cancel").onclick = () => $("dlg").close();
 $("dform").addEventListener("submit", e => {
   e.preventDefault(); const f = $("dform");
   const vals = { term: f.term.value, course: f.course.value.trim().toUpperCase().replace(/\s+/g, " "), section: pad2(f.section.value.trim()), title: f.title.value.trim(),
-    credits: num(f.credits.value), session: f.session.value.trim() || "Full Term", modality: f.modality.value, cap: num(f.cap.value), days: normDays(f.days.value),
+    credits: num(f.credits.value), session: normSession(f.session.value), modality: f.modality.value, cap: num(f.cap.value), days: normDays(f.days.value),
     start: parseHHMM(f.start.value), end: parseHHMM(f.end.value), room: normRoom(f.room.value).room, instructor: f.instructor.value.trim(), note: f.note.value.trim(), flags: [] };
   if (!vals.days) { vals.start = vals.end = null; }
   if (vals.modality === "Online" || vals.modality === "IS") vals.room = "";
