@@ -149,7 +149,7 @@ table.cov tr.warn td { background: transparent; } table.cov tr.warn td:first-chi
 </style>
 </head>
 <body>
-<div id="app-version" data-hash="50b8a8df" title="Page version (content id 50b8a8df). Same version here and on the website = same file." style="position:absolute;top:3px;right:10px;font:11px/1.2 system-ui,sans-serif;color:#8b8697;z-index:9999">v 2026-11-23 13:39</div>
+<div id="app-version" data-hash="efcfc053" title="Page version (content id efcfc053). Same version here and on the website = same file." style="position:absolute;top:3px;right:10px;font:11px/1.2 system-ui,sans-serif;color:#8b8697;z-index:9999">v 2026-11-23 14:14</div>
 <div class="wrap">
   <header>
     <h1>Schedule Editor</h1>
@@ -534,7 +534,10 @@ function importPlan(sheet, hi) {
       ipStu: num(pick(h, r, "forecast_in_person_students")) ?? num(pick(h, r, "last_in_person_students")) ?? 0,
       onStu: num(pick(h, r, "forecast_online_students")) ?? num(pick(h, r, "last_online_students")) ?? 0,
       basedOn: pick(h, r, "forecast_in_person_students") ? "forecast" : pick(h, r, "based_on_term"),
-      title: pick(h, r, "title") || "", note: pick(h, r, "note") || "" });
+      title: pick(h, r, "title") || "", note: pick(h, r, "note") || "",
+      // sessions from the long-range file (Section Planner): "1st Half; 2nd Half"
+      ipSess: (pick(h, r, "in_person_session") || "").split(";").map(x => x.trim()).filter(Boolean).map(normSession),
+      onSess: (pick(h, r, "online_session") || "").split(";").map(x => x.trim()).filter(Boolean).map(normSession) });
   }
   return out;
 }
@@ -961,7 +964,11 @@ document.addEventListener("click", e => {
   const ca = e.target.closest("[data-cov-course]");
   if (ca) {
     const c = ca.dataset.covCourse, online = ca.dataset.covMode === "Online";
-    openDialog({ id: null, term: S.term, course: c, section: nextSectionNo(S.term, c, online), title: ca.dataset.covTitle || "", credits: 3, session: "Full Term",
+    // session from the long-range file when the plan has it: the first one not used yet by this course and mode
+    const pr = (S.plan || []).find(p => p.season === seasonOf(S.term) && p.course === c), list = pr ? (online ? pr.onSess : pr.ipSess) || [] : [];
+    const used = S.sections.filter(x => x.term === S.term && x.course === c && (x.modality === "Online") === online).map(x => normSession(x.session));
+    const session = list.find(x => !used.includes(x)) || list[0] || "Full Term";
+    openDialog({ id: null, term: S.term, course: c, section: nextSectionNo(S.term, c, online), title: ca.dataset.covTitle || "", credits: 3, session,
       modality: online ? "Online" : "F2F", cap: null, days: "", start: null, end: null, room: "", instructor: "", note: "", flags: [] }, true);
     return;
   }
