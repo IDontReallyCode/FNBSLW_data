@@ -149,7 +149,7 @@ table.cov tr.warn td { background: transparent; } table.cov tr.warn td:first-chi
 </style>
 </head>
 <body>
-<div id="app-version" data-hash="efcfc053" title="Page version (content id efcfc053). Same version here and on the website = same file." style="position:absolute;top:3px;right:10px;font:11px/1.2 system-ui,sans-serif;color:#8b8697;z-index:9999">v 2026-11-23 14:14</div>
+<div id="app-version" data-hash="b191187a" title="Page version (content id b191187a). Same version here and on the website = same file." style="position:absolute;top:3px;right:10px;font:11px/1.2 system-ui,sans-serif;color:#8b8697;z-index:9999">v 2026-11-24 13:10</div>
 <div class="wrap">
   <header>
     <h1>Schedule Editor</h1>
@@ -520,7 +520,10 @@ function importLoads(sheet, hi) {
     const pref = {}, dept = (pick(h, r, "department") || subjectCode()).toUpperCase();
     for (const b of ["yes", "maybe", "no"]) for (const c of pick(h, r, "courses_" + b).split(/[;\n]/).map(x => x.trim().toUpperCase().replace(/\s+/g, " ")).filter(Boolean))
       pref[/^\d/.test(c) ? `${dept} ${c}` : c] = b;
-    out[nameKey(name)] = { name, Fall: num(pick(h, r, "fall_load")), Spring: num(pick(h, r, "spring_load")), position: pick(h, r, "position"), pref };
+    // cleared to teach online (Teaching Loads page, OL on a course): "FNBSLW 341; FNBSLW 442"
+    const online = new Set(pick(h, r, "courses_online").split(/[;\n]/).map(x => x.trim().toUpperCase().replace(/\s+/g, " ")).filter(Boolean)
+      .map(c => /^\d/.test(c) ? `${dept} ${c}` : c));
+    out[nameKey(name)] = { name, Fall: num(pick(h, r, "fall_load")), Spring: num(pick(h, r, "spring_load")), position: pick(h, r, "position"), pref, online };
   }
   return out;
 }
@@ -576,6 +579,9 @@ function guessOurDept() {
 const hasPrefs = L => !!(L && L.pref && Object.keys(L.pref).length);
 const prefFor = (instructor, course) => { const L = S.loads && S.loads[resolveKey(instructor)]; return hasPrefs(L) ? L.pref[course] || "unsorted" : null; };
 const PREF_LABEL = { yes: "YES", maybe: "MAYBE", no: "HARD NO", unsorted: "not sorted" };
+// online clearance is checked once the loads file marks at least one course OL for someone; then no OL = not cleared
+const onlineActive = () => !!(S.loads && Object.values(S.loads).some(L => L.online && L.online.size));
+const onlineOK = (instructor, course) => { if (!onlineActive()) return null; const L = S.loads[resolveKey(instructor)]; return L ? !!(L.online && L.online.has(course)) : null; };
 // Counts toward a teaching load: not independent study, not internships (e.g. FNBSLW 493, any "Internship" title)
 const countsForLoad = s => s.modality !== "IS" && !/internship/i.test(s.title || "") && !/\s493$/.test(s.course || "");
 function check(term) {
@@ -603,6 +609,8 @@ function check(term) {
     if (pf === "no") add("e", `${label(s)}: ${s.instructor} said HARD NO to ${s.course}`, [s.id]);
     else if (pf === "unsorted") add("w", `${label(s)}: ${s.course} is not in ${s.instructor}'s course preferences (not sorted)`, [s.id]);
     else if (pf === "maybe") add("h", `${label(s)}: ${s.instructor} said MAYBE to ${s.course}`, [s.id]);
+    if (s.modality === "Online" && !isTBD(s.instructor) && onlineOK(s.instructor, s.course) === false)
+      add("e", `${label(s)}: ${s.instructor} is not cleared to teach ${s.course} online (no OL in the teaching loads file)`, [s.id]);
   }
   // loads
   const season = seasonOf(term), byI = {};
@@ -840,13 +848,14 @@ function renderCoverage(term) {
   if (S.loads && (season === "Fall" || season === "Spring")) for (const [k, L] of Object.entries(S.loads))
     if (L[season] != null) spare[k] = L[season] - secs.filter(s => resolveKey(s.instructor) === k && countsForLoad(s)).length;
   const anyPrefs = S.loads && Object.values(S.loads).some(hasPrefs);
-  const candidates = c => {
+  const candidates = (c, online) => {
     if (!anyPrefs) return "";
-    const who = b => Object.entries(S.loads).filter(([, L]) => L.pref && L.pref[c] === b).map(([k, L]) => ({ name: lastName(L.name), sp: spare[k] ?? 0 }))
+    const who = b => Object.entries(S.loads).filter(([, L]) => L.pref && L.pref[c] === b && (!online || !onlineActive() || (L.online && L.online.has(c))))
+      .map(([k, L]) => ({ name: lastName(L.name), sp: spare[k] ?? 0 }))
       .sort((a, b) => b.sp - a.sp || a.name.localeCompare(b.name));
     const y = who("yes"), m = who("maybe"), fmt = x => `${esc(x.name)}${x.sp > 0 ? ` (${x.sp} free)` : ""}`;
     const yFree = y.filter(x => x.sp > 0), mFree = m.filter(x => x.sp > 0);
-    return `<div class="cand">${yFree.length ? `YES with load left: <b>${yFree.map(fmt).join(", ")}</b>` : y.length ? `YES (no load left): ${y.map(fmt).join(", ")}` : "No one said YES"}
+    return `<div class="cand">${online && onlineActive() ? "Online, cleared (OL) · " : ""}${yFree.length ? `YES with load left: <b>${yFree.map(fmt).join(", ")}</b>` : y.length ? `YES (no load left): ${y.map(fmt).join(", ")}` : "No one said YES"}
       ${mFree.length ? ` · MAYBE: <i>${mFree.map(fmt).join(", ")}</i>` : ""}</div>`;
   };
   if (!S.plan) courses = `<p class="covnote">Open your <b>section_plan_….csv</b> (Open files…) to compare the schedule with the plan.</p>`;
@@ -862,7 +871,7 @@ function renderCoverage(term) {
       const btn = (mode, n) => n > 0 ? `<button type="button" class="covadd" data-cov-course="${esc(c)}" data-cov-mode="${mode}" data-cov-title="${esc(title)}">+ add ${mode === "Online" ? "online" : "in person"}</button>` : "";
       const off = (wi === hi && wo === ho);
       return `<tr class="${off ? "" : "warn"}"><td>${esc(c)}${p ? "" : ' <small style="color:var(--warn)">not in plan</small>'}</td><td class="t">${esc(title)}</td>
-        ${gapCell(hi, wi)}${gapCell(ho, wo)}<td>${btn("F2F", wi - hi)} ${btn("Online", wo - ho)}${wi > hi || wo > ho ? candidates(c) : ""}</td></tr>`;
+        ${gapCell(hi, wi)}${gapCell(ho, wo)}<td>${btn("F2F", wi - hi)} ${btn("Online", wo - ho)}${wi > hi ? candidates(c, false) : ""}${wo > ho ? candidates(c, true) : ""}</td></tr>`;
     }).join("");
     courses = `<p class="covsum"><b>${th[0] + th[1]}</b> sections scheduled / <b>${tp[0] + tp[1]}</b> planned
       (in person ${th[0]}/${tp[0]}, online ${th[1]}/${tp[1]})${miss ? ` · <b style="color:var(--err)">${miss} missing</b>` : " · ✓ every planned section exists"}</p>
@@ -904,7 +913,7 @@ function renderIssues(term, R) {
   $("issues").innerHTML = `<h2>Checks <small style="font-weight:400;color:var(--muted)">${esc(term)}</small></h2>
     ${!g.e.length && !g.w.length ? '<p class="none">✓ No errors or warnings.</p>' : ""}
     ${block("e", "Errors")}${block("w", "Warnings")}${block("h", "Hints (soft rules, rooms to ask for)")}
-    <p style="color:var(--faint);font-size:11.5px;margin-top:12px">Hard rules (and HARD NO course preferences) are checked live. Survey preferences and most soft rules are for the AI audit.</p>`;
+    <p style="color:var(--faint);font-size:11.5px;margin-top:12px">Hard rules (HARD NO course preferences and online clearance too) are checked live. Survey preferences and most soft rules are for the AI audit.</p>`;
 }
 function renderChips() {
   const c = (ok, text, tip) => `<span class="chip ${ok ? "ok" : "missing"}" title="${esc(tip || "")}">${ok ? "✓" : "○"} ${esc(text)}</span>`;
@@ -1031,18 +1040,22 @@ function syncPref() {
   const season = seasonOf(f.term.value), rank = { yes: 0, maybe: 1, unsorted: 2, no: 3 };
   const people = Object.entries(S.loads).filter(([, L]) => hasPrefs(L)).map(([k, L]) => {
     const used = S.sections.filter(s => s.term === f.term.value && resolveKey(s.instructor) === k && countsForLoad(s) && s.id !== editing?.id).length;
-    return { name: L.name, pf: L.pref[course] || "unsorted", free: L[season] != null ? L[season] - used : null };
+    return { name: L.name, pf: L.pref[course] || "unsorted", free: L[season] != null ? L[season] - used : null,
+      ol: f.modality.value === "Online" && onlineActive() ? !!(L.online && L.online.has(course)) : null };
   }).sort((a, b) => rank[a.pf] - rank[b.pf] || (b.free ?? 0) - (a.free ?? 0) || lastName(a.name).localeCompare(lastName(b.name)));
   // the instructor list (datalist) shows each person's answer for this course, YES first
-  $("dl-instr").innerHTML = people.map(p => `<option value="${esc(p.name)}" label="${PREF_LABEL[p.pf]}${p.free != null ? ` · ${p.free} free` : ""}">`).join("");
+  $("dl-instr").innerHTML = people.map(p => `<option value="${esc(p.name)}" label="${PREF_LABEL[p.pf]}${p.ol === false ? " · not cleared online" : p.ol ? " · OL" : ""}${p.free != null ? ` · ${p.free} free` : ""}">`).join("");
   const pf = who && !isTBD(who) ? prefFor(who, course) : null;
-  const now = pf ? `${esc(who)}: <span class="p-${pf === "unsorted" ? "maybe" : pf}">${PREF_LABEL[pf]}</span> for ${esc(course)}. ` : "";
-  const yes = people.filter(p => p.pf === "yes");
+  const olNow = who && !isTBD(who) && f.modality.value === "Online" ? onlineOK(who, course) : null;
+  const now = (pf ? `${esc(who)}: <span class="p-${pf === "unsorted" ? "maybe" : pf}">${PREF_LABEL[pf]}</span> for ${esc(course)}. ` : "")
+    + (olNow === false ? `<span class="p-no">Not cleared to teach it online.</span> ` : "");
+  const yes = people.filter(p => p.pf === "yes" && p.ol !== false);
   $("dpref").innerHTML = now + (yes.length ? `YES for ${esc(course)}: ${yes.map(p => `<button type="button" data-pick="${esc(p.name)}" title="Use ${esc(p.name)}">${esc(lastName(p.name))}${p.free != null ? ` · ${p.free} free` : ""}</button>`).join("")}`
-    : `No one said YES to ${esc(course)}.`);
+    : `No one said YES to ${esc(course)}${f.modality.value === "Online" && onlineActive() ? " and is cleared online" : ""}.`);
 }
 $("dform").instructor.addEventListener("input", syncPref);
 $("dform").course.addEventListener("change", syncPref);
+$("dform").modality.addEventListener("change", syncPref);
 $("dform").term.addEventListener("change", syncPref);
 $("dpref").addEventListener("click", e => { const b = e.target.closest("[data-pick]"); if (b) { $("dform").instructor.value = b.dataset.pick; syncPref(); } });
 // online / independent study: no room (days and times stay optional, e.g. a synchronous online class)
@@ -1146,7 +1159,7 @@ $("b-audit").onclick = () => {
   const readme = [["Schedule audit package"], [""], [`Created ${stamp()} with the Schedule Editor. Terms: ${terms().join(", ")}.`], [""],
     ["Sheets:"], ["- Schedule: every section (one row per section)."], ["- Changes: every change the chair made after the AI draft, in order."],
     ["- Checks: hard-rule results the editor computed (room/instructor clashes, room capacity, loads, section plan, simple soft rules)."], [""],
-    ["- Preferences: each instructor's courses sorted YES / MAYBE / HARD NO (from the teaching loads file). HARD NO is a hard rule."], [""],
+    ["- Preferences: each instructor's courses sorted YES / MAYBE / HARD NO, and the courses they are cleared to teach ONLINE (from the teaching loads file). HARD NO and online clearance are hard rules."], [""],
     ["Please audit this schedule against the soft constraints, the instructor survey preferences and the other files you were given."],
     ["The hard rules in the Checks sheet are already computed; focus on preferences and soft constraints."],
     ["For each problem: the section(s), the rule or preference, how bad it is, and one concrete fix (move to which day/time/room, or swap with which section)."],
@@ -1156,8 +1169,9 @@ $("b-audit").onclick = () => {
     { name: "Schedule", rows: [COLS].concat(sortSections(S.sections.slice()).sort((a, b) => termKey(a.term) - termKey(b.term)).map(strictRow)) },
     { name: "Changes", rows: [["when", "change"]].concat(S.log.map(l => [l.t, l.what])) },
     { name: "Checks", rows: [["term", "level", "issue"]].concat(all) },
-  ].concat(S.loads && Object.values(S.loads).some(hasPrefs) ? [{ name: "Preferences", rows: [["instructor", "YES", "MAYBE", "HARD NO"]].concat(
-    Object.values(S.loads).filter(hasPrefs).map(L => [L.name, ...["yes", "maybe", "no"].map(b => Object.keys(L.pref).filter(c => L.pref[c] === b).sort().join("; "))])) }] : [])),
+  ].concat(S.loads && Object.values(S.loads).some(hasPrefs) ? [{ name: "Preferences", rows: [["instructor", "YES", "MAYBE", "HARD NO", "cleared ONLINE"]].concat(
+    Object.values(S.loads).filter(hasPrefs).map(L => [L.name, ...["yes", "maybe", "no"].map(b => Object.keys(L.pref).filter(c => L.pref[c] === b).sort().join("; ")),
+      [...(L.online || [])].sort().join("; ")])) }] : [])),
     `schedule_audit_${yearLabel()}.xlsx`);
   say(`Exported schedule_audit_${yearLabel()}.xlsx (${S.sections.length} sections, ${S.log.length} changes, ${all.length} check results).`);
 };
@@ -1171,7 +1185,7 @@ $("b-format").onclick = () => {
     ["start / end: 24-hour HH:MM (e.g. 09:30, 14:00). Standard blocks: 08:00-09:15, 09:30-10:45, 11:00-12:15, 12:30-13:45, 14:00-15:15, 15:30-16:45; evenings allowed (e.g. 17:00-19:30). Blank when days = N/A."],
     ["room: 'HH' + number as in hyland_classrooms.xlsx (e.g. HH2317), or 'Online'. Never two rooms in one cell."],
     ["instructor: 'Last, First' (e.g. 'Gmach, Mark') or 'TBD'."],
-    ["instructor vs course: the teaching loads file has courses_yes, courses_maybe and courses_no for each person. NEVER give anyone a course in their courses_no (HARD NO). Prefer courses_yes; use courses_maybe only when no one with YES has load left. If no one can take a section, put 'TBD' and say so."], ["modality: F2F, Online, IS (independent study) or Hybrid."], ["cap: a whole number."],
+    ["instructor vs course: the teaching loads file has courses_yes, courses_maybe and courses_no for each person. NEVER give anyone a course in their courses_no (HARD NO). Prefer courses_yes; use courses_maybe only when no one with YES has load left. ONLINE sections: only to someone whose courses_online lists that course (cleared to teach it online). If no one can take a section, put 'TBD' and say so."], ["modality: F2F, Online, IS (independent study) or Hybrid."], ["cap: a whole number."],
     ["ONE value per cell. No 'old new' pairs, no comments inside data cells: put comments in 'note'."]];
   download(xlsxBlob([{ name: "Schedule", rows: [COLS].concat(ex) }, { name: "Rules", rows: rules, header: false, widths: [140] }]), "schedule_draft_format.xlsx");
   say("Saved schedule_draft_format.xlsx: give it to the AI with your instructions (the 3 example rows can be deleted).");

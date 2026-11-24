@@ -67,7 +67,7 @@ a { color: var(--accent); }
 </style>
 </head>
 <body>
-<div id="app-version" data-hash="56321116" title="Page version (content id 56321116). Same version here and on the website = same file." style="position:absolute;top:3px;right:10px;font:11px/1.2 system-ui,sans-serif;color:#8b8697;z-index:9999">v 2026-11-23 14:14</div>
+<div id="app-version" data-hash="5c2c632f" title="Page version (content id 5c2c632f). Same version here and on the website = same file." style="position:absolute;top:3px;right:10px;font:11px/1.2 system-ui,sans-serif;color:#8b8697;z-index:9999">v 2026-11-24 13:10</div>
 <div class="wrap">
 <header>
   <h1>Building a department schedule</h1>
@@ -130,6 +130,7 @@ a { color: var(--accent); }
     <li>The list starts with everyone who taught your subject in the last three Fall/Spring terms. The <strong>Recent</strong> column shows how many sections each person taught in each term, in any subject. Hover over it to see the sections. Remove people who are leaving or were one-off adjuncts, and use <strong>Add</strong> for new hires.</li>
     <li>Set each person's position (tenure track 3-3, lecturer 4-4, and so on). Type any change to the Fall or Spring load and pick a reason.</li>
     <li>Open the <strong>Course preferences</strong> tab. For each person, drag your department's courses into <strong>YES</strong>, <strong>MAYBE</strong> or <strong>HARD NO</strong>. <strong>Taught before → YES</strong> and <strong>All not sorted → HARD NO</strong> do most of the work, and <strong>Copy from…</strong> copies a colleague's sort (for example, from one law professor to another). HARD NO is a hard rule: the AI is told never to break it, and the Schedule Editor shows it as a red error.</li>
+    <li>On each YES or MAYBE course, click the small <strong>OL</strong> button if that person is <strong>cleared to teach it online</strong> (or press <strong>O</strong>). <strong>Taught online before → OL</strong> marks every course they have already taught online; <strong>All YES/MAYBE → OL</strong> is for someone cleared for everything they teach. Once anyone has an OL, an online section given to someone without OL for that course is a red error in the Schedule Editor, and the AI is told the same.</li>
     <li>Click <strong>Save file (.csv)</strong>. The preferences are saved in the same file. Move <code>teaching_loads_&lt;DEPT&gt;_YYYY-YYYY.csv</code> from Downloads into your year folder.</li>
   </ol>
   <p>Next time, use <strong>Open saved file…</strong> with your saved file. <strong>Start over</strong> clears your entries and reloads your department's list.</p>
@@ -183,6 +184,7 @@ Files attached:
 - Section plan: the number of in-person and online sections per course per term.
 - Teaching loads: the number of sections each instructor teaches in Fall and in Spring. Match these exactly.
 - Course preferences (columns courses_yes, courses_maybe, courses_no in the teaching loads file): NEVER give anyone a course in their courses_no (HARD NO). Give people courses from their courses_yes. Use courses_maybe only when no one with YES has load left. If no one can take a section, put TBD and tell me.
+- Online clearance (column courses_online in the teaching loads file): an ONLINE section only goes to someone whose courses_online lists that course. Nobody else teaches it online, even with YES.
 - Rooms: use only these rooms, and never put a section in a room smaller than its cap. Prefer rooms owned by my department.
 - Soft constraints and survey: respect them in priority order (High, then Medium, then Low).
 
